@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>콘서 CBT</title>
+<meta name="description" content="콘텐츠 서비스 디자인 주차별 복습 문제와 종합 모의고사.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<!-- ============ 홈 ============ -->
+<main class="wrap screen" id="screen-home">
+
+  <header class="top">
+    <div class="brand">
+      <h1>콘서 CBT</h1>
+      <span class="tag">콘텐츠 서비스 디자인</span>
+    </div>
+    <p class="lede">주차별로 풀고, 8주차엔 전 범위를 섞어서. 틀린 문항은 알아서 모입니다.</p>
+  </header>
+
+  <section class="block" id="statsBlock" hidden>
+    <div class="stat-row" id="statRow"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">범위</h2>
+    <div class="chips" id="weekChips"></div>
+    <p class="hint" id="poolHint">&nbsp;</p>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">방식</h2>
+    <div class="seg" id="modeSeg">
+      <button data-m="study" aria-pressed="true">학습 모드</button>
+      <button data-m="exam" aria-pressed="false">시험 모드</button>
+    </div>
+    <p class="hint" id="modeHint"></p>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">문항 수</h2>
+    <div class="seg" id="countSeg">
+      <button data-c="0" aria-pressed="true">전체</button>
+      <button data-c="10" aria-pressed="false">10문항</button>
+      <button data-c="20" aria-pressed="false">20문항</button>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn btn-primary btn-lg" id="btnStart">시작하기</button>
+    <button class="btn btn-lg" id="btnWrong" hidden>오답만 풀기</button>
+  </div>
+
+  <footer class="foot">
+    기록과 오답노트는 이 기기의 브라우저에만 저장됩니다.
+    <button class="linkbtn" id="btnReset">기록 지우기</button>
+  </footer>
+</main>
+
+<!-- ============ 풀이 ============ -->
+<main class="wrap screen" id="screen-quiz" hidden>
+
+  <div class="quizbar">
+    <button class="iconbtn" id="btnQuit" aria-label="그만두기">&#10005;</button>
+    <div class="progress" aria-hidden="true"><span id="progressFill"></span></div>
+    <button class="counter" id="btnGrid" aria-label="문항 목록"><b id="curNo">1</b>/<span id="totalNo">20</span></button>
+  </div>
+
+  <div class="gridpanel" id="gridPanel" hidden></div>
+
+  <article class="qwrap">
+    <div class="qmeta">
+      <span class="qno" id="qWeek">2주차</span>
+      <span class="qtag" id="qTag"></span>
+      <span class="qtype" id="qType"></span>
+    </div>
+    <div class="qtext" id="qText"></div>
+    <div id="qBody"></div>
+    <div class="verdict" id="verdict" hidden></div>
+  </article>
+
+  <div class="navbar">
+    <button class="btn" id="btnPrev">이전</button>
+    <button class="btn btn-primary" id="btnCheck" hidden>확인</button>
+    <button class="btn btn-primary" id="btnNext">다음</button>
+  </div>
+</main>
+
+<!-- ============ 결과 ============ -->
+<main class="wrap screen" id="screen-result" hidden>
+  <header class="top">
+    <div class="brand">
+      <h1>결과</h1>
+      <span class="tag" id="resScope"></span>
+    </div>
+  </header>
+
+  <section class="scorecard">
+    <div class="scorenum"><span id="resPct">0</span><small>점</small></div>
+    <div class="scoremeta" id="resMeta"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn btn-primary btn-lg" id="btnRetryWrong">틀린 문항만 다시</button>
+    <button class="btn btn-lg" id="btnHome">홈으로</button>
+  </div>
+
+  <h2 class="sec" style="margin-top:26px">문항별 확인</h2>
+  <div id="resList"></div>
+</main>
+
+<script src="data/week02.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
