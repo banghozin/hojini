@@ -121,15 +121,6 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
 
 .actions { display: flex; flex-direction: column; gap: 9px; margin-top: 8px; }
 
-/* 안쪽 여백으로 터치 영역을 넓히고, 같은 크기의 음수 바깥 여백으로
-   보이는 위치는 그대로 둡니다. */
-.linkbtn {
-  appearance: none; border: 0; background: none;
-  padding: 13px 10px;
-  margin: -13px -10px;
-  color: var(--ink-3); font-size: 12px; text-decoration: underline; cursor: pointer;
-}
-
 /* ---------- chips / seg ---------- */
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -176,31 +167,6 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
   font-weight: 600;
   box-shadow: var(--shadow);
 }
-
-/* ---------- stats ---------- */
-
-.stat-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.stat {
-  flex: 0 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 10px 14px;
-  min-width: 92px;
-}
-.stat b {
-  display: block;
-  font-family: var(--mono);
-  font-size: 19px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-}
-.stat span { font-size: 11.5px; color: var(--ink-3); }
 
 /* ---------- quiz bar ---------- */
 
@@ -319,139 +285,139 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
 }
 .qtext i { color: var(--ink-2); font-style: normal; display: block; margin-top: 8px; padding-left: 11px; border-left: 2px solid var(--line); }
 
-/* 보기 */
+/* 빈칸 */
 
-.opts { display: flex; flex-direction: column; gap: 8px; }
-.opt {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  width: 100%;
-  text-align: left;
-  appearance: none;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  border-radius: 9px;
-  padding: 12px 13px;
-  cursor: pointer;
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-.opt:hover { border-color: var(--ink-3); }
-.opt .mark {
+.blanks { display: flex; flex-direction: column; gap: 13px; }
+
+.blank-row { display: flex; align-items: flex-start; gap: 10px; }
+.blank-cell { flex: 1 1 0; min-width: 0; }
+
+/* 라벨이 길면 알아서 윗줄로 올라갑니다 (input 이 12em 아래로는 줄지 않음) */
+.blank-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; }
+.blank-label {
   flex: 0 0 auto;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid var(--line);
-  display: grid;
-  place-items: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+/* 짝 배치의 시험지 번호. 두 칸 앞에 한 번만 */
+.pair-no {
+  flex: 0 0 auto;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ink-3);
-  margin-top: 1px;
+  padding-top: 13px;
 }
-.opt[data-sel="1"] { border-color: var(--accent); background: var(--accent-soft); }
-.opt[data-sel="1"] .mark { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
-.opt[data-state="right"] { border-color: var(--good); background: var(--good-soft); }
-.opt[data-state="right"] .mark { border-color: var(--good); background: var(--good); color: var(--surface); }
-.opt[data-state="wrong"] { border-color: var(--bad); background: var(--bad-soft); }
-.opt[data-state="wrong"] .mark { border-color: var(--bad); background: var(--bad); color: var(--surface); }
-.opt[data-state="missed"] { border-color: var(--good); border-style: dashed; }
-.opt:disabled { cursor: default; }
 
-/* 단답 */
-
-.short-in {
-  width: 100%;
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 12px 13px;
-  font-size: 16px;
-  font-family: var(--body);
-}
-.short-in:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
-
-/* 짝짓기 */
-
-.match-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line-soft);
-}
-.match-row:last-child { border-bottom: 0; }
-.match-left { flex: 0 0 34%; font-weight: 500; font-size: 14px; }
-.match-row select {
-  flex: 1;
+.blank-in {
+  flex: 1 1 12em;
   min-width: 0;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 9px 10px;
-  font-size: 14px;
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 16px;
   font-family: var(--body);
 }
-.match-row[data-state="right"] select { border-color: var(--good); background: var(--good-soft); }
-.match-row[data-state="wrong"] select { border-color: var(--bad); background: var(--bad-soft); }
+.blank-in:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.blank-in:read-only { background: var(--surface-2); color: var(--ink-2); }
 
-/* 순서 배열 */
+.arrow { flex: 0 0 auto; color: var(--ink-3); font-size: 15px; padding-top: 11px; }
 
-.order-slots { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; min-height: 8px; }
-.order-slot {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--accent-soft);
-  background: var(--accent-soft);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
+.ans {
+  margin-top: 7px;
+  padding-left: 2px;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--ink);
-  appearance: none;
+  font-weight: 500;
+  text-wrap: pretty;
 }
-.order-slot .idx { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
-.order-slot[data-state="right"] { background: var(--good-soft); border-color: var(--good); }
-.order-slot[data-state="wrong"] { background: var(--bad-soft); border-color: var(--bad); }
-.order-pool { display: flex; flex-wrap: wrap; gap: 7px; }
-.order-pool button {
-  appearance: none;
-  border: 1px dashed var(--line);
-  background: var(--surface);
-  color: var(--ink-2);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 13.5px;
-  cursor: pointer;
+.anslabel {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--good);
+  background: var(--good-soft);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-right: 7px;
+  white-space: nowrap;
 }
-.order-pool button:hover { border-color: var(--ink-3); border-style: solid; }
-.order-hint { font-size: 12px; color: var(--ink-3); margin: 0 0 8px; }
 
-/* 판정 */
+/* 좁은 화면에서는 짝 지은 두 칸을 위아래로 놓고, 한 묶음인 게 보이도록 테두리를 두릅니다 */
+@media (max-width: 520px) {
+  .blanks { gap: 10px; }
+  .blank-row.pair {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 11px 12px 13px;
+  }
+  .blank-row.pair .arrow { padding: 0; align-self: center; transform: rotate(90deg); }
+  .pair-no { padding-top: 0; }
+}
+
+/* 정답 공개. 맞고 틀림을 따지지 않으므로 색을 입히지 않습니다 */
 
 .verdict {
-  margin-top: 16px;
+  margin-top: 18px;
   border-radius: 9px;
   padding: 13px 14px;
   font-size: 13.5px;
   line-height: 1.6;
+  background: var(--surface-2);
 }
-.verdict.right { background: var(--good-soft); }
-.verdict.partial { background: var(--mid-soft); }
-.verdict.wrong { background: var(--bad-soft); }
-.verdict .vhead { font-weight: 700; font-size: 14px; margin-bottom: 5px; display: block; }
-.verdict.right .vhead { color: var(--good); }
-.verdict.partial .vhead { color: var(--mid); }
-.verdict.wrong .vhead { color: var(--bad); }
+.verdict .vhead {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--ink-3);
+  margin-bottom: 5px;
+  display: block;
+}
 .verdict .why { color: var(--ink-2); }
 .verdict b { color: var(--ink); }
+.verdict u { text-decoration-color: var(--ink-3); text-underline-offset: 2px; }
+
+/* ---------- 오답노트 담기 ---------- */
+
+.notebtn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  appearance: none;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-3);
+  border-radius: 9px;
+  padding: 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.notebtn:hover { border-color: var(--ink-3); color: var(--ink-2); }
+.notebtn[data-on="1"] {
+  border-style: solid;
+  border-color: var(--mid);
+  background: var(--mid-soft);
+  color: var(--mid);
+  font-weight: 600;
+}
+
+/* 안쪽 여백으로 터치 영역을 넓히고, 같은 크기의 음수 바깥 여백으로
+   보이는 위치는 그대로 둡니다. */
+.linkbtn {
+  appearance: none; border: 0; background: none;
+  padding: 13px 10px;
+  margin: -13px -10px;
+  color: var(--ink-3); font-size: 12px; text-decoration: underline; cursor: pointer;
+}
 
 /* ---------- 하단 네비 ---------- */
 
@@ -467,63 +433,6 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
 }
 .navbar .btn { flex: 1; }
 .navbar .btn-primary { flex: 2; }
-
-/* ---------- 결과 ---------- */
-
-.scorecard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.scorenum {
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 46px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
-}
-.scorenum small { font-size: 15px; color: var(--ink-3); font-weight: 500; margin-left: 3px; }
-.scoremeta { display: flex; gap: 16px; flex-wrap: wrap; }
-.scoremeta div { font-size: 12.5px; color: var(--ink-2); }
-.scoremeta b { display: block; font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; }
-
-.rcard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
-  border-radius: var(--r);
-  padding: 14px 15px;
-}
-.rcard + .rcard { margin-top: 10px; }
-.rcard.right { border-left-color: var(--good); }
-.rcard.partial { border-left-color: var(--mid); }
-.rcard.wrong { border-left-color: var(--bad); }
-.rhead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-.pill { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
-.pill.right { background: var(--good-soft); color: var(--good); }
-.pill.partial { background: var(--mid-soft); color: var(--mid); }
-.pill.wrong { background: var(--bad-soft); color: var(--bad); }
-.rq { font-size: 14px; font-weight: 500; line-height: 1.55; margin: 0 0 9px; }
-.rq i { font-style: normal; color: var(--ink-2); display: block; margin-top: 6px; }
-.rline { font-size: 13.5px; line-height: 1.6; margin: 0 0 4px; color: var(--ink-2); }
-.rline b { color: var(--ink); font-weight: 600; }
-.rline.ok b { color: var(--good); }
-.rline.no b { color: var(--bad); }
-.rwhy {
-  margin: 9px 0 0;
-  padding-top: 9px;
-  border-top: 1px solid var(--line-soft);
-  font-size: 13px;
-  color: var(--ink-2);
-  line-height: 1.6;
-}
 
 .foot {
   margin-top: 30px;

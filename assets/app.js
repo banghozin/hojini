@@ -1,7 +1,9 @@
-/* 콘서 CBT — 주차별 예/복습 테스트 문제은행 앱
+/* 콘서 CBT. 주차별 예/복습 테스트 문제은행 앱
  *
  * 문항은 data/weekNN.js 가 window.QUIZ_BANK 에 밀어 넣습니다.
  * 주차를 추가할 때는 파일을 만들고 index.html 에 script 태그 한 줄만 더하면 됩니다.
+ *
+ * 채점하지 않습니다. 빈칸에 키워드를 적어 보고 `정답 확인`을 누르면 답이 나옵니다.
  */
 (function () {
   "use strict";
@@ -19,6 +21,7 @@
       copy.weekTitle = wk.title || "";
       copy.no = copy.no || String(i + 1);
       copy.id = copy.id || ("w" + wk.week + "-" + (i + 1));
+      copy.blanks = copy.blanks || [];
       ALL.push(copy);
     });
   });
@@ -26,13 +29,11 @@
   var BY_ID = {};
   ALL.forEach(function (q) { BY_ID[q.id] = q; });
 
-  var TYPE_KO = { choice: "객관식", multi: "복수 정답", match: "짝짓기", order: "순서 배열", short: "단답" };
-
   /* ================= 저장소 ================= */
+  /* 화면 설정과 오답노트만 기억합니다. 점수나 푼 내용은 저장하지 않습니다. */
 
-  var LS_WRONG = "konseo.wrong.v1";
-  var LS_HIST = "konseo.history.v1";
   var LS_PREF = "konseo.pref.v1";
+  var LS_WRONG = "konseo.wrong.v2";
 
   function lsGet(key, dflt) {
     try {
@@ -41,18 +42,27 @@
     } catch (e) { return dflt; }
   }
   function lsSet(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* 저장 불가 — 무시 */ }
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* 저장 불가. 무시 */ }
   }
 
-  var wrongSet = lsGet(LS_WRONG, []);
-  var history = lsGet(LS_HIST, []);
   var pref = lsGet(LS_PREF, {});
+
+  /* 오답노트. 문항 id 목록이고, 버튼을 눌러야만 들어갑니다 */
+  var wrongSet = lsGet(LS_WRONG, []).filter(function (id) { return BY_ID[id]; });
+
+  function saveWrong() { lsSet(LS_WRONG, wrongSet); }
+  function inWrong(id) { return wrongSet.indexOf(id) >= 0; }
+
+  function toggleWrong(id) {
+    var i = wrongSet.indexOf(id);
+    if (i >= 0) wrongSet.splice(i, 1); else wrongSet.push(id);
+    saveWrong();
+  }
 
   /* ================= 설정 상태 ================= */
 
   var sel = {
     weeks: Array.isArray(pref.weeks) && pref.weeks.length ? pref.weeks : BANK.map(function (w) { return w.week; }),
-    mode: pref.mode === "exam" ? "exam" : "study",
     count: typeof pref.count === "number" ? pref.count : 0
   };
 
@@ -71,13 +81,6 @@
     return a;
   }
 
-  function norm(s) {
-    return String(s == null ? "" : s)
-      .toLowerCase()
-      .replace(/\s+/g, "")
-      .replace(/[.,!?·・‧「」『』()（）\[\]{}"'`~\-–—_/\\]/g, "");
-  }
-
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -86,7 +89,7 @@
   }
 
   function show(name) {
-    ["home", "quiz", "result"].forEach(function (s) {
+    ["home", "quiz", "done"].forEach(function (s) {
       $("screen-" + s).hidden = (s !== name);
     });
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -139,7 +142,7 @@
 
     var pool = poolFor(sel.weeks);
     $("poolHint").textContent = sel.weeks.length
-      ? sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차 — 모두 " + pool.length + "문항"
+      ? sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차, 모두 " + pool.length + "문항"
       : "주차를 골라 주세요.";
 
     // 문항 수: 풀보다 큰 선택지는 잠급니다
@@ -152,59 +155,19 @@
       b.style.opacity = tooBig ? ".35" : "";
     });
 
-    Array.prototype.forEach.call($("modeSeg").querySelectorAll("button"), function (b) {
-      b.setAttribute("aria-pressed", String(sel.mode === b.getAttribute("data-m")));
-    });
-    $("modeHint").textContent = sel.mode === "study"
-      ? "한 문항씩 바로 정답과 해설을 확인하며 넘어갑니다."
-      : "끝까지 다 푼 뒤에 한꺼번에 채점합니다. 실제 시험처럼 연습할 때.";
-
     // 오답노트
-    var wrongLive = wrongSet.filter(function (id) { return BY_ID[id]; });
-    if (wrongLive.length !== wrongSet.length) { wrongSet = wrongLive; lsSet(LS_WRONG, wrongSet); }
+    var live = wrongSet.filter(function (id) { return BY_ID[id]; });
+    if (live.length !== wrongSet.length) { wrongSet = live; saveWrong(); }
     $("btnWrong").hidden = !wrongSet.length;
-    $("btnWrong").textContent = "오답만 풀기 (" + wrongSet.length + ")";
-
-    // 기록
-    var stats = $("statRow");
-    stats.textContent = "";
-    if (history.length) {
-      $("statsBlock").hidden = false;
-      var last = history[history.length - 1];
-      var best = history.reduce(function (m, h) { return Math.max(m, h.pct); }, 0);
-      var avg = Math.round(history.reduce(function (s, h) { return s + h.pct; }, 0) / history.length);
-
-      [["최근", last.pct + "점"], ["최고", best + "점"], ["평균", avg + "점"], ["푼 횟수", history.length + "회"]]
-        .forEach(function (t) {
-          var d = el("div", "stat");
-          d.appendChild(el("b", null, t[1]));
-          d.appendChild(el("span", null, t[0]));
-          stats.appendChild(d);
-        });
-    } else {
-      $("statsBlock").hidden = true;
-    }
+    $("btnWrong").textContent = "오답노트만 풀기 (" + wrongSet.length + ")";
+    $("wrongFoot").hidden = !wrongSet.length;
   }
-
-  $("modeSeg").addEventListener("click", function (e) {
-    var b = e.target.closest("button");
-    if (!b) return;
-    sel.mode = b.getAttribute("data-m");
-    savePref(); renderHome();
-  });
 
   $("countSeg").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b || b.disabled) return;
     sel.count = Number(b.getAttribute("data-c"));
     savePref(); renderHome();
-  });
-
-  $("btnReset").addEventListener("click", function () {
-    if (!window.confirm("기록과 오답노트를 모두 지울까요?")) return;
-    wrongSet = []; history = [];
-    lsSet(LS_WRONG, wrongSet); lsSet(LS_HIST, history);
-    renderHome();
   });
 
   $("btnStart").addEventListener("click", function () {
@@ -219,27 +182,23 @@
     startSession(pool, 0);
   });
 
+  $("btnClearWrong").addEventListener("click", function () {
+    if (!window.confirm("오답노트를 비울까요?")) return;
+    wrongSet = [];
+    saveWrong();
+    renderHome();
+  });
+
   /* ================= 세션 ================= */
 
   var S = null;
 
   function prepare(q) {
-    // 이번 판에서 쓸 표시 순서를 미리 정해 둡니다 (푸는 도중 흔들리지 않도록)
-    var p = { q: q, answered: false, locked: false };
-    if (q.type === "choice" || q.type === "multi") {
-      p.options = shuffle(q.options);
-      p.value = (q.type === "multi") ? [] : null;
-    } else if (q.type === "match") {
-      p.lefts = q.pairs.map(function (pr) { return pr[0]; });
-      p.rights = shuffle(q.pairs.map(function (pr) { return pr[1]; }));
-      p.value = {};
-    } else if (q.type === "order") {
-      p.pool = shuffle(q.seq);
-      p.value = [];
-    } else if (q.type === "short") {
-      p.value = "";
-    }
-    return p;
+    return {
+      q: q,
+      locked: false,
+      value: q.blanks.map(function () { return ""; })
+    };
   }
 
   function startSession(pool, count) {
@@ -248,8 +207,6 @@
     S = {
       list: qs.map(prepare),
       idx: 0,
-      mode: sel.mode,
-      startedAt: Date.now(),
       weeks: (function () {
         var ws = {};
         qs.forEach(function (q) { ws[q.week] = 1; });
@@ -262,73 +219,9 @@
     renderQuestion();
   }
 
-  /* ---------- 채점 ---------- */
-
-  function grade(p) {
-    var q = p.q, v = p.value, i;
-
-    if (q.type === "choice") {
-      return v == null ? 0 : (norm(v) === norm(q.answer) ? 1 : 0);
-    }
-
-    if (q.type === "multi") {
-      var want = q.answers.map(norm);
-      var got = (v || []).map(norm);
-      var hit = 0, miss = 0;
-      for (i = 0; i < got.length; i++) {
-        if (want.indexOf(got[i]) >= 0) hit++; else miss++;
-      }
-      var sc = (hit - miss) / want.length;
-      return Math.max(0, Math.min(1, sc));
-    }
-
-    if (q.type === "match") {
-      var okc = 0;
-      q.pairs.forEach(function (pr) {
-        if (v && norm(v[pr[0]]) === norm(pr[1])) okc++;
-      });
-      return okc / q.pairs.length;
-    }
-
-    if (q.type === "order") {
-      if (!v || v.length !== q.seq.length) {
-        var partial = 0;
-        for (i = 0; i < q.seq.length; i++) if (v && norm(v[i]) === norm(q.seq[i])) partial++;
-        return partial / q.seq.length;
-      }
-      var n = 0;
-      for (i = 0; i < q.seq.length; i++) if (norm(v[i]) === norm(q.seq[i])) n++;
-      return n / q.seq.length;
-    }
-
-    if (q.type === "short") {
-      var mine = norm(v);
-      if (!mine) return 0;
-      for (i = 0; i < q.accept.length; i++) {
-        var a = norm(q.accept[i]);
-        if (!a) continue;
-        if (mine === a) return 1;
-        if (a.length >= 2 && mine.indexOf(a) >= 0) return 1; // 조사·어미가 붙어도 통과
-      }
-      return 0;
-    }
-
-    return 0;
-  }
-
-  function verdictOf(score) {
-    if (score >= 0.999) return "right";
-    if (score > 0) return "partial";
-    return "wrong";
-  }
-
-  function hasAnswer(p) {
-    var v = p.value;
-    if (p.q.type === "multi") return !!(v && v.length);
-    if (p.q.type === "match") return !!(v && Object.keys(v).length);
-    if (p.q.type === "order") return !!(v && v.length);
-    if (p.q.type === "short") return !!String(v || "").trim();
-    return v != null;
+  /* 빈칸을 하나라도 채웠는지. 문항 목록에 점을 찍는 데만 씁니다 */
+  function hasAny(p) {
+    return p.value.some(function (v) { return String(v || "").trim() !== ""; });
   }
 
   /* ---------- 문항 렌더 ---------- */
@@ -340,266 +233,141 @@
     $("progressFill").style.width = ((S.idx) / S.list.length * 100) + "%";
     $("qWeek").textContent = q.week + "주차 " + q.no + "번";
     $("qTag").textContent = q.tag || "";
-    $("qType").textContent = TYPE_KO[q.type] || "";
+    $("qType").textContent = q.blanks.length ? "빈칸 " + q.blanks.length + "개" : "";
     $("qText").innerHTML = q.q;
 
     var body = $("qBody");
     body.textContent = "";
+    renderBlanks(body, p);
 
-    if (q.type === "choice" || q.type === "multi") renderOptions(body, p);
-    else if (q.type === "match") renderMatch(body, p);
-    else if (q.type === "order") renderOrder(body, p);
-    else if (q.type === "short") renderShort(body, p);
+    // 해설
+    if (p.locked) showWhy(p);
+    else { $("verdict").hidden = true; $("verdict").textContent = ""; }
 
-    // 판정 영역
-    var vd = $("verdict");
-    if (p.locked) {
-      showVerdict(p);
-    } else {
-      vd.hidden = true;
-      vd.textContent = "";
-    }
+    syncNoteBtn();
 
     // 버튼
     $("btnPrev").disabled = (S.idx === 0);
-    var last = (S.idx === S.list.length - 1);
-
-    if (S.mode === "study" && !p.locked) {
-      $("btnCheck").hidden = false;
-      $("btnCheck").disabled = !hasAnswer(p);
-      $("btnNext").hidden = true;
-    } else {
-      $("btnCheck").hidden = true;
-      $("btnNext").hidden = false;
-      $("btnNext").textContent = last ? "제출하고 결과 보기" : "다음";
-    }
+    $("btnCheck").hidden = p.locked;
+    $("btnNext").textContent = (S.idx === S.list.length - 1) ? "다 봤어요" : "다음";
 
     renderGrid();
   }
 
-  function syncCheckBtn() {
-    var p = S.list[S.idx];
-    if (S.mode === "study" && !p.locked) $("btnCheck").disabled = !hasAnswer(p);
-  }
+  function blankCell(p, i, skipLabel) {
+    var b = p.q.blanks[i];
+    var cell = el("div", "blank-cell");
 
-  function renderOptions(body, p) {
-    var q = p.q;
-    var wrapEl = el("div", "opts");
-    var multi = (q.type === "multi");
+    var top = el("div", "blank-top");
+    if (b.label && !skipLabel) top.appendChild(el("span", "blank-label", b.label));
 
-    if (multi) {
-      var h = el("p", "order-hint", "정답을 모두 고르세요. 틀린 것을 함께 고르면 점수가 깎입니다.");
-      body.appendChild(h);
-    }
-
-    p.options.forEach(function (opt, i) {
-      var b = el("button", "opt");
-      b.type = "button";
-      var mark = el("span", "mark", multi ? "" : String(i + 1));
-      b.appendChild(mark);
-      b.appendChild(el("span", null, opt));
-
-      var chosen = multi ? (p.value.indexOf(opt) >= 0) : (p.value === opt);
-      if (chosen) b.setAttribute("data-sel", "1");
-      if (multi && chosen) mark.textContent = "✓";
-
-      if (p.locked) {
-        b.disabled = true;
-        var isRight = multi ? (q.answers.indexOf(opt) >= 0) : (opt === q.answer);
-        if (chosen && isRight) b.setAttribute("data-state", "right");
-        else if (chosen && !isRight) b.setAttribute("data-state", "wrong");
-        else if (!chosen && isRight) b.setAttribute("data-state", "missed");
-      } else {
-        b.addEventListener("click", function () {
-          if (multi) {
-            var k = p.value.indexOf(opt);
-            if (k >= 0) p.value.splice(k, 1); else p.value.push(opt);
-          } else {
-            p.value = opt;
-          }
-          p.answered = true;
-          renderQuestion();
-        });
-      }
-      wrapEl.appendChild(b);
-    });
-
-    body.appendChild(wrapEl);
-  }
-
-  function renderMatch(body, p) {
-    var q = p.q;
-    body.appendChild(el("p", "order-hint", "왼쪽 속성마다 대응하는 방법을 고르세요."));
-
-    p.lefts.forEach(function (left) {
-      var row = el("div", "match-row");
-      row.appendChild(el("div", "match-left", left));
-
-      var s = document.createElement("select");
-      s.setAttribute("aria-label", left + "에 대응하는 방법");
-      var blank = document.createElement("option");
-      blank.value = "";
-      blank.textContent = "— 고르기 —";
-      s.appendChild(blank);
-
-      p.rights.forEach(function (r) {
-        var o = document.createElement("option");
-        o.value = r;
-        o.textContent = r;
-        if (p.value[left] === r) o.selected = true;
-        s.appendChild(o);
-      });
-
-      if (p.locked) {
-        s.disabled = true;
-        var right = null;
-        q.pairs.forEach(function (pr) { if (pr[0] === left) right = pr[1]; });
-        row.setAttribute("data-state", norm(p.value[left]) === norm(right) ? "right" : "wrong");
-      } else {
-        s.addEventListener("change", function () {
-          if (s.value) p.value[left] = s.value; else delete p.value[left];
-          p.answered = true;
-          syncCheckBtn();
-          renderGrid();
-        });
-      }
-
-      row.appendChild(s);
-      body.appendChild(row);
-    });
-  }
-
-  function renderOrder(body, p) {
-    var q = p.q;
-    body.appendChild(el("p", "order-hint", "순서대로 눌러 배열하세요. 배열된 항목을 누르면 되돌립니다."));
-
-    var slots = el("div", "order-slots");
-    p.value.forEach(function (item, i) {
-      var b = el("button", "order-slot");
-      b.type = "button";
-      b.appendChild(el("span", "idx", String(i + 1)));
-      b.appendChild(el("span", null, item));
-      if (p.locked) {
-        b.disabled = true;
-        b.setAttribute("data-state", norm(q.seq[i]) === norm(item) ? "right" : "wrong");
-      } else {
-        b.addEventListener("click", function () {
-          p.value.splice(i, 1);
-          renderQuestion();
-        });
-      }
-      slots.appendChild(b);
-    });
-    body.appendChild(slots);
-
-    if (!p.locked) {
-      var pool = el("div", "order-pool");
-      p.pool.forEach(function (item) {
-        if (p.value.indexOf(item) >= 0) return;
-        var b = el("button", null, item);
-        b.type = "button";
-        b.addEventListener("click", function () {
-          p.value.push(item);
-          p.answered = true;
-          renderQuestion();
-        });
-        pool.appendChild(b);
-      });
-      body.appendChild(pool);
-    }
-  }
-
-  function renderShort(body, p) {
     var input = document.createElement("input");
-    input.className = "short-in";
+    input.className = "blank-in";
     input.type = "text";
     input.autocomplete = "off";
-    input.placeholder = "답을 입력하세요";
-    input.value = p.value || "";
-    input.setAttribute("aria-label", "답 입력");
+    input.value = p.value[i] || "";
+    input.placeholder = p.locked ? "" : "답을 적어 보세요";
+    input.setAttribute("aria-label", (b.label ? b.label + " " : "") + "답 입력");
+
     if (p.locked) {
-      input.disabled = true;
+      input.readOnly = true;
     } else {
       input.addEventListener("input", function () {
-        p.value = input.value;
-        p.answered = true;
-        syncCheckBtn();
+        p.value[i] = input.value;
         renderGrid();
       });
       input.addEventListener("keydown", function (e) {
         if (e.key !== "Enter") return;
         e.preventDefault();
-        if (S.mode === "study") { if (hasAnswer(p)) checkNow(); }
-        else goNext();
+        revealNow();
       });
     }
-    body.appendChild(input);
+    top.appendChild(input);
+    cell.appendChild(top);
+
+    if (p.locked) {
+      var ans = el("div", "ans");
+      ans.appendChild(el("span", "anslabel", "정답"));
+      ans.appendChild(document.createTextNode(b.answer));
+      cell.appendChild(ans);
+    }
+    return cell;
   }
 
-  /* ---------- 판정 표시 ---------- */
+  function renderBlanks(body, p) {
+    var q = p.q;
+    var pair = (q.layout === "pair");
+    var box = el("div", "blanks");
 
-  function answerText(q) {
-    if (q.type === "choice") return q.answer;
-    if (q.type === "multi") return q.answers.join(" · ");
-    if (q.type === "match") return q.pairs.map(function (pr) { return pr[0] + " → " + pr[1]; }).join(" / ");
-    if (q.type === "order") return q.seq.join(" → ");
-    if (q.type === "short") return q.accept[0];
-    return "";
+    for (var i = 0; i < q.blanks.length;) {
+      // 짝 배치일 때는 시험지 표처럼 번호를 두 칸 앞에 한 번만 답니다
+      if (pair && i + 1 < q.blanks.length) {
+        var prow = el("div", "blank-row pair");
+        if (q.blanks[i].label) prow.appendChild(el("span", "pair-no", q.blanks[i].label));
+        prow.appendChild(blankCell(p, i, true));
+        prow.appendChild(el("span", "arrow", "→"));
+        prow.appendChild(blankCell(p, i + 1, true));
+        box.appendChild(prow);
+        i += 2;
+      } else {
+        var row = el("div", "blank-row");
+        row.appendChild(blankCell(p, i));
+        box.appendChild(row);
+        i += 1;
+      }
+    }
+    body.appendChild(box);
   }
 
-  function myAnswerText(p) {
-    var q = p.q, v = p.value;
-    if (!hasAnswer(p)) return "(무응답)";
-    if (q.type === "choice") return v;
-    if (q.type === "multi") return v.join(" · ");
-    if (q.type === "match") return q.pairs.map(function (pr) { return pr[0] + " → " + (v[pr[0]] || "?"); }).join(" / ");
-    if (q.type === "order") return v.join(" → ");
-    if (q.type === "short") return v;
-    return "";
+  /* ---------- 오답노트 담기 ---------- */
+
+  function syncNoteBtn() {
+    var b = $("btnNote");
+    var on = inWrong(S.list[S.idx].q.id);
+    b.setAttribute("data-on", on ? "1" : "0");
+    b.textContent = on ? "오답노트에 담김. 빼려면 누르세요" : "오답노트로 보내기";
   }
 
-  function showVerdict(p) {
-    var sc = grade(p);
-    var v = verdictOf(sc);
+  $("btnNote").addEventListener("click", function () {
+    if (!S) return;
+    toggleWrong(S.list[S.idx].q.id);
+    syncNoteBtn();
+  });
+
+  /* ---------- 정답 공개 ---------- */
+
+  function showWhy(p) {
     var vd = $("verdict");
-    vd.className = "verdict " + v;
+    vd.className = "verdict reveal";
     vd.textContent = "";
 
-    var head = el("span", "vhead",
-      v === "right" ? "정답" : v === "partial" ? "부분 정답 (" + Math.round(sc * 100) + "%)" : "오답");
-    vd.appendChild(head);
+    if (!p.q.why) { vd.hidden = true; return; }
 
-    if (v !== "right") {
-      var ans = el("div", null);
-      ans.appendChild(el("b", null, "정답 "));
-      ans.appendChild(document.createTextNode(answerText(p.q)));
-      vd.appendChild(ans);
-    }
-
+    vd.appendChild(el("span", "vhead", "해설"));
     var why = el("div", "why");
-    why.innerHTML = p.q.why || "";
+    why.innerHTML = p.q.why;
     vd.appendChild(why);
-
     vd.hidden = false;
   }
 
-  function checkNow() {
+  function revealNow() {
     var p = S.list[S.idx];
-    if (!hasAnswer(p)) return;
+    if (p.locked) return;
     p.locked = true;
     renderQuestion();
-    $("verdict").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    var vd = $("verdict");
+    if (!vd.hidden) vd.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   /* ---------- 이동 ---------- */
 
   function goNext() {
-    if (S.idx === S.list.length - 1) { finish(); return; }
+    if (S.idx === S.list.length - 1) { finishUp(); return; }
     S.idx++;
     renderQuestion();
   }
 
-  $("btnCheck").addEventListener("click", checkNow);
+  $("btnCheck").addEventListener("click", revealNow);
   $("btnNext").addEventListener("click", goNext);
   $("btnPrev").addEventListener("click", function () {
     if (S.idx === 0) return;
@@ -608,7 +376,7 @@
   });
 
   $("btnQuit").addEventListener("click", function () {
-    if (!window.confirm("그만두고 홈으로 갈까요? 지금까지 푼 내용은 사라집니다.")) return;
+    if (!window.confirm("그만두고 홈으로 갈까요? 지금까지 적은 내용은 사라집니다.")) return;
     S = null;
     renderHome();
     show("home");
@@ -626,7 +394,7 @@
     S.list.forEach(function (p, i) {
       var b = el("button", null, String(i + 1));
       b.type = "button";
-      if (hasAnswer(p)) b.classList.add("done");
+      if (p.locked || hasAny(p)) b.classList.add("done");
       if (i === S.idx) b.classList.add("here");
       b.addEventListener("click", function () {
         S.idx = i;
@@ -640,128 +408,33 @@
   document.addEventListener("keydown", function (e) {
     if ($("screen-quiz").hidden || !S) return;
     if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-    var p = S.list[S.idx];
 
-    if (e.key >= "1" && e.key <= "9" && !p.locked && (p.q.type === "choice" || p.q.type === "multi")) {
-      var i = Number(e.key) - 1;
-      if (i < p.options.length) {
-        var opt = p.options[i];
-        if (p.q.type === "multi") {
-          var k = p.value.indexOf(opt);
-          if (k >= 0) p.value.splice(k, 1); else p.value.push(opt);
-        } else {
-          p.value = opt;
-        }
-        p.answered = true;
-        renderQuestion();
-      }
-    } else if (e.key === "Enter") {
-      if (S.mode === "study" && !p.locked) { if (hasAnswer(p)) checkNow(); }
-      else goNext();
+    if (e.key === "Enter") {
+      if (S.list[S.idx].locked) goNext(); else revealNow();
     } else if (e.key === "ArrowLeft") {
       if (S.idx > 0) { S.idx--; renderQuestion(); }
     } else if (e.key === "ArrowRight") {
-      if (!(S.mode === "study" && !p.locked)) goNext();
+      goNext();
     }
   });
 
-  /* ================= 결과 ================= */
+  /* ================= 다 본 뒤 ================= */
 
-  function finish() {
-    var total = 0;
-    var counts = { right: 0, partial: 0, wrong: 0 };
-    var newWrong = wrongSet.slice();
-
-    S.list.forEach(function (p) {
-      p.score = grade(p);
-      p.verdict = verdictOf(p.score);
-      total += p.score;
-      counts[p.verdict]++;
-
-      var i = newWrong.indexOf(p.q.id);
-      if (p.verdict === "right") { if (i >= 0) newWrong.splice(i, 1); }
-      else if (i < 0) newWrong.push(p.q.id);
-    });
-
-    wrongSet = newWrong;
-    lsSet(LS_WRONG, wrongSet);
-
-    var pct = Math.round(total / S.list.length * 100);
-
-    history.push({ t: Date.now(), weeks: S.weeks, n: S.list.length, pct: pct });
-    if (history.length > 30) history = history.slice(-30);
-    lsSet(LS_HIST, history);
-
-    renderResult(pct, counts);
-    show("result");
+  function finishUp() {
+    $("doneScope").textContent = S.weeks.join("주차, ") + "주차, " + S.list.length + "문항";
+    show("done");
   }
 
-  function renderResult(pct, counts) {
-    $("resPct").textContent = String(pct);
-    $("resScope").textContent = S.weeks.join("주차 · ") + "주차 · " + S.list.length + "문항";
-
-    var meta = $("resMeta");
-    meta.textContent = "";
-    var mins = Math.max(1, Math.round((Date.now() - S.startedAt) / 60000));
-    [["정답", counts.right], ["부분", counts.partial], ["오답", counts.wrong], ["걸린 시간", mins + "분"]]
-      .forEach(function (t) {
-        var d = el("div");
-        d.appendChild(el("b", null, String(t[1])));
-        d.appendChild(document.createTextNode(t[0]));
-        meta.appendChild(d);
-      });
-
-    $("btnRetryWrong").hidden = (counts.right === S.list.length);
-
-    var list = $("resList");
-    list.textContent = "";
-
-    S.list.forEach(function (p, i) {
-      var card = el("div", "rcard " + p.verdict);
-
-      var head = el("div", "rhead");
-      head.appendChild(el("span", "qno", p.q.week + "주차 " + p.q.no + "번"));
-      var pill = el("span", "pill " + p.verdict,
-        p.verdict === "right" ? "정답" : p.verdict === "partial" ? "부분 정답 " + Math.round(p.score * 100) + "%" : "오답");
-      head.appendChild(pill);
-      card.appendChild(head);
-
-      var q = el("p", "rq");
-      q.innerHTML = p.q.q;
-      card.appendChild(q);
-
-      var mine = el("p", "rline " + (p.verdict === "right" ? "ok" : "no"));
-      mine.appendChild(el("b", null, "내 답 "));
-      mine.appendChild(document.createTextNode(myAnswerText(p)));
-      card.appendChild(mine);
-
-      if (p.verdict !== "right") {
-        var ans = el("p", "rline ok");
-        ans.appendChild(el("b", null, "정답 "));
-        ans.appendChild(document.createTextNode(answerText(p.q)));
-        card.appendChild(ans);
-      }
-
-      if (p.q.why) {
-        var why = el("div", "rwhy");
-        why.innerHTML = p.q.why;
-        card.appendChild(why);
-      }
-
-      list.appendChild(card);
-    });
-  }
+  $("btnAgain").addEventListener("click", function () {
+    var pool = S.list.map(function (p) { return p.q; });
+    if (!pool.length) return;
+    startSession(pool, 0);
+  });
 
   $("btnHome").addEventListener("click", function () {
     S = null;
     renderHome();
     show("home");
-  });
-
-  $("btnRetryWrong").addEventListener("click", function () {
-    var pool = S.list.filter(function (p) { return p.verdict !== "right"; }).map(function (p) { return p.q; });
-    if (!pool.length) return;
-    startSession(pool, 0);
   });
 
   /* ================= 시작 ================= */
