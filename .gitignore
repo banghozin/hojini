@@ -3,3 +3,21 @@ Thumbs.db
 desktop.ini
 node_modules/
 .vercel
+
+# 사진이 실수로 올라가지 않게 막습니다. 공개 저장소이고 수업 사진에 사람 얼굴이 들어 있습니다.
+# 정말 필요한 이미지는 git add -f 로 하나씩만 넣으세요.
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.heic
+*.heif
+*.tif
+*.tiff
+*.pdf
+*.mp4
+*.mov
+*.hwp
+*.hwpx
