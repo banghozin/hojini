@@ -133,7 +133,7 @@
   }
 
   function show(name) {
-    ["home", "quiz", "done"].forEach(function (s) {
+    ["home", "quiz", "sheet", "done"].forEach(function (s) {
       $("screen-" + s).hidden = (s !== name);
     });
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -145,6 +145,14 @@
     return ALL.filter(function (q) {
       return q.subjectKey === subjectKey && weeks.indexOf(q.week) >= 0;
     });
+  }
+
+  /* 「콘텐츠서비스디자인 2주차, 3주차」 같은 범위 문구 */
+  function scopeOf(list) {
+    var subs = {}, ws = {};
+    list.forEach(function (q) { subs[q.subject] = 1; ws[q.week] = 1; });
+    return Object.keys(subs).join(", ") + " " +
+           Object.keys(ws).map(Number).sort(function (a, b) { return a - b; }).join("주차, ") + "주차";
   }
 
   function kindLabel(s) {
@@ -280,6 +288,127 @@
     renderHome();
   });
 
+  /* ================= 한눈에 보기 ================= */
+  /* 푸는 화면이 아니라 문제와 답을 전부 펼쳐 둔 읽기용 화면입니다.
+   * 순서를 섞지 않고 주차별, 번호순 그대로 둡니다. */
+
+  function renderSheet(pool) {
+    $("sheetScope").textContent = scopeOf(pool);
+    $("sheetCount").textContent = pool.length + "문항";
+
+    var box = $("sheetList");
+    box.textContent = "";
+
+    var lastWeek = null;
+    pool.forEach(function (q) {
+      if (q.week !== lastWeek) {
+        lastWeek = q.week;
+        var h = el("h2", "sheet-week");
+        h.appendChild(el("span", "sheet-week-no", q.week + "주차"));
+        if (q.weekTitle) h.appendChild(el("span", "sheet-week-title", q.weekTitle));
+        box.appendChild(h);
+      }
+      box.appendChild(sheetItem(q));
+    });
+  }
+
+  function sheetItem(q) {
+    var art = el("article", "sheet-item");
+
+    var meta = el("div", "sheet-meta");
+    meta.appendChild(el("span", "sheet-no", q.no));
+    if (q.tag) meta.appendChild(el("span", "qtag", q.tag));
+    meta.appendChild(el("span", "qtype", TYPE_LABEL[q.kind](q)));
+    art.appendChild(meta);
+
+    var qt = el("div", "sheet-q");
+    qt.innerHTML = q.q;
+    art.appendChild(qt);
+
+    var ans = el("div", "sheet-a");
+
+    if (q.kind === "blanks") {
+      /* layout "pair" 는 「속성 → 대응 방법」처럼 두 칸이 한 쌍입니다 */
+      var pair = (q.layout === "pair");
+      for (var i = 0; i < q.blanks.length;) {
+        var row = el("div", "sheet-blank");
+        if (pair && i + 1 < q.blanks.length) {
+          if (q.blanks[i].label) row.appendChild(el("span", "sheet-blank-label", q.blanks[i].label));
+          row.appendChild(el("span", "sheet-blank-ans", q.blanks[i].answer));
+          row.appendChild(el("span", "arrow", "→"));
+          row.appendChild(el("span", "sheet-blank-ans", q.blanks[i + 1].answer));
+          i += 2;
+        } else {
+          if (q.blanks[i].label) row.appendChild(el("span", "sheet-blank-label", q.blanks[i].label));
+          row.appendChild(el("span", "sheet-blank-ans", q.blanks[i].answer));
+          i += 1;
+        }
+        ans.appendChild(row);
+      }
+
+    } else if (q.kind === "choices") {
+      q.choices.forEach(function (text, i) {
+        var row = el("div", "sheet-choice" + (i === q.answer ? " correct" : ""));
+        row.appendChild(el("span", "choice-no", String(i + 1)));
+        row.appendChild(el("span", "choice-text", text));
+        if (i === q.answer) row.appendChild(el("span", "choice-mark", "정답"));
+        ans.appendChild(row);
+      });
+
+    } else {
+      if (q.keys && q.keys.length) {
+        var keys = el("div", "keys");
+        keys.appendChild(el("span", "keys-head", "핵심어"));
+        q.keys.forEach(function (k) { keys.appendChild(el("span", "key", k)); });
+        ans.appendChild(keys);
+      }
+      if (q.model) {
+        var m = el("div", "model");
+        m.appendChild(el("span", "anslabel", "모범답안"));
+        m.appendChild(el("p", null, q.model));
+        ans.appendChild(m);
+      }
+    }
+    art.appendChild(ans);
+
+    if (q.why) {
+      var why = el("div", "sheet-why");
+      why.appendChild(el("span", "vhead", "해설"));
+      var body = el("div", "why");
+      body.innerHTML = q.why;
+      why.appendChild(body);
+      art.appendChild(why);
+    }
+    return art;
+  }
+
+  /* 두 토글은 화면에 클래스만 붙입니다. 다시 그리지 않습니다 */
+  function bindSheetToggle(btnId, cls) {
+    $(btnId).addEventListener("click", function () {
+      var on = $(btnId).getAttribute("aria-pressed") !== "true";
+      $(btnId).setAttribute("aria-pressed", String(on));
+      $("screen-sheet").classList.toggle(cls, !on);
+    });
+  }
+  bindSheetToggle("btnToggleWhy", "no-why");
+  bindSheetToggle("btnToggleQ", "no-distractor");
+
+  $("btnSheet").addEventListener("click", function () {
+    var pool = poolFor(sel.subject, sel.weeks);
+    if (!pool.length) return;
+    renderSheet(pool);
+    show("sheet");
+  });
+
+  $("btnPrint").addEventListener("click", function () { window.print(); });
+
+  function backHome() {
+    renderHome();
+    show("home");
+  }
+  $("btnSheetQuit").addEventListener("click", backHome);
+  $("btnSheetHome").addEventListener("click", backHome);
+
   /* ================= 세션 ================= */
 
   var S = null;
@@ -299,12 +428,7 @@
     S = {
       list: qs.map(prepare),
       idx: 0,
-      scope: (function () {
-        var subs = {}, ws = {};
-        qs.forEach(function (q) { subs[q.subject] = 1; ws[q.week] = 1; });
-        return Object.keys(subs).join(", ") + " " +
-               Object.keys(ws).map(Number).sort(function (a, b) { return a - b; }).join("주차, ") + "주차";
-      })()
+      scope: scopeOf(qs)
     };
     $("totalNo").textContent = String(S.list.length);
     $("gridPanel").hidden = true;

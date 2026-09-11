@@ -45,7 +45,8 @@
   </section>
 
   <div class="actions">
-    <button class="btn btn-primary btn-lg" id="btnStart">시작하기</button>
+    <button class="btn btn-primary btn-lg" id="btnStart">문제 풀기</button>
+    <button class="btn btn-lg" id="btnSheet">문제와 답 한눈에 보기</button>
     <button class="btn btn-lg" id="btnWrong" hidden>오답노트만 풀기</button>
   </div>
 
@@ -86,6 +87,34 @@
     <button class="btn" id="btnPrev">이전</button>
     <button class="btn btn-primary" id="btnCheck">정답 확인</button>
     <button class="btn btn-primary" id="btnNext">다음</button>
+  </div>
+</main>
+
+<!-- ============ 한눈에 보기 ============ -->
+<main class="wrap screen" id="screen-sheet" hidden>
+
+  <div class="sheetbar">
+    <button class="iconbtn" id="btnSheetQuit" aria-label="홈으로">&#10005;</button>
+    <span class="sheetbar-title" id="sheetScope"></span>
+    <button class="linkbtn" id="btnPrint">인쇄</button>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <h1>문제와 답</h1>
+      <span class="tag" id="sheetCount"></span>
+    </div>
+    <p class="lede">전부 펼쳐 둔 화면입니다. 훑어보거나 인쇄해서 보세요.</p>
+    <div class="sheettools">
+      <button class="chip" id="btnToggleWhy" type="button" aria-pressed="true">해설 보기</button>
+      <button class="chip" id="btnToggleQ" type="button" aria-pressed="true">보기와 오답 보기</button>
+    </div>
+  </header>
+
+  <div id="sheetList"></div>
+
+  <div class="actions">
+    <button class="btn btn-lg" id="btnSheetHome">홈으로</button>
   </div>
 </main>
 

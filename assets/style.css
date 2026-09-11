@@ -581,3 +581,156 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
 }
 .model p { margin: 6px 0 0; font-size: 14.5px; line-height: 1.75; color: var(--ink); word-break: keep-all; }
 .model .anslabel { color: var(--good); }
+
+/* ---------- 한눈에 보기 ---------- */
+
+.sheetbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 12px;
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 30;
+}
+.sheetbar-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#screen-sheet header.top { padding-top: 6px; }
+.sheettools { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.sheettools .chip { font-size: 12.5px; padding: 5px 12px; }
+
+.sheet-week {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  margin: 26px 0 11px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+.sheet-week:first-child { margin-top: 0; }
+.sheet-week-no { color: var(--accent); }
+.sheet-week-title { font-family: var(--body); font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+
+.sheet-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 15px 16px 16px;
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+.sheet-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+.sheet-no {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.sheet-q {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-wrap: pretty;
+  word-break: keep-all;
+}
+.sheet-q i { color: var(--ink-2); font-style: normal; display: block; margin-top: 7px; padding-left: 11px; border-left: 2px solid var(--line); }
+.sheet-a { margin-top: 11px; }
+
+/* 빈칸형 정답 줄 */
+.sheet-blank {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 14.5px;
+  word-break: keep-all;
+}
+.sheet-blank:first-child { border-top: 0; padding-top: 0; }
+.sheet-blank-label { flex: 0 0 auto; color: var(--ink-3); font-size: 12.5px; font-weight: 600; min-width: 14px; }
+.sheet-blank-ans { color: var(--good); font-weight: 600; }
+
+/* 4지선다 보기 줄 */
+.sheet-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.sheet-choice .choice-no {
+  flex: 0 0 auto;
+  width: 20px; height: 20px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+}
+.sheet-choice.correct { background: var(--good-soft); color: var(--ink); font-weight: 500; }
+.sheet-choice.correct .choice-no { border-color: var(--good); color: var(--good); }
+.sheet-choice.correct .choice-mark { color: var(--good); border-color: var(--good); }
+
+.sheet-why {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13.5px;
+  color: var(--ink-2);
+  word-break: keep-all;
+}
+.sheet-why .vhead {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--ink-3);
+  margin-bottom: 5px;
+}
+.sheet-why b { color: var(--ink); }
+.sheet-why u { text-decoration-color: var(--ink-3); text-underline-offset: 2px; }
+
+/* 토글. 해설과 오답 보기를 감춥니다 */
+#screen-sheet.no-why .sheet-why { display: none; }
+#screen-sheet.no-distractor .sheet-choice:not(.correct) { display: none; }
+#screen-sheet.no-distractor .sheet-choice.correct { margin-top: 2px; }
+
+/* ---------- 인쇄 ---------- */
+
+@media print {
+  body { background: #FFF; color: #000; font-size: 11pt; }
+  .sheetbar, .sheettools, .actions, .foot, .lede { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+  #screen-sheet header.top { border-bottom: 2px solid #000; margin-bottom: 14px; }
+  .sheet-item {
+    border: 0;
+    border-bottom: 1px solid #BBB;
+    border-radius: 0;
+    padding: 9px 0;
+    margin: 0;
+    background: none;
+  }
+  .sheet-week { break-after: avoid; }
+  .sheet-choice { padding: 2px 0; }
+  .sheet-choice.correct { background: none; font-weight: 700; }
+  .sheet-blank-ans, .model .anslabel, .sheet-choice.correct .choice-no { color: #000; }
+  .model { background: none; border: 1px solid #BBB; }
+}
+.sheet-blank .arrow { padding-top: 0; font-size: 13px; }
+.sheet-blank { flex-wrap: wrap; }
