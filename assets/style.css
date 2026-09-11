@@ -583,6 +583,8 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
 .model .anslabel { color: var(--good); }
 
 /* ---------- 한눈에 보기 ---------- */
+/* 문제와 답만 촘촘하게 늘어놓는 화면입니다. 카드를 쓰지 않고
+ * 얇은 구분선으로만 나눠 한 화면에 최대한 많이 담습니다. */
 
 .sheetbar {
   display: flex;
@@ -604,133 +606,155 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#screen-sheet header.top { padding-top: 6px; }
-.sheettools { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+#screen-sheet header.top { padding-top: 4px; padding-bottom: 12px; margin-bottom: 14px; }
+.sheettools { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 .sheettools .chip { font-size: 12.5px; padding: 5px 12px; }
 
+/* 주차 머리글. 스크롤할 때 위에 붙어 있습니다 */
 .sheet-week {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 15px;
-  margin: 26px 0 11px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+  margin: 22px 0 0;
+  padding: 7px 0;
+  border-bottom: 1.5px solid var(--ink);
   display: flex;
   align-items: baseline;
   gap: 9px;
+  position: sticky;
+  top: 62px;
+  background: var(--paper);
+  z-index: 20;
 }
 .sheet-week:first-child { margin-top: 0; }
 .sheet-week-no { color: var(--accent); }
-.sheet-week-title { font-family: var(--body); font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+.sheet-week-title { font-family: var(--body); font-size: 12px; font-weight: 500; color: var(--ink-3); }
 
 .sheet-item {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 15px 16px 16px;
-  margin-bottom: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
   break-inside: avoid;
 }
-.sheet-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
-.sheet-no {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 5px;
-  padding: 2px 7px;
-}
-.sheet-q {
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.6;
-  text-wrap: pretty;
-  word-break: keep-all;
-}
-.sheet-q i { color: var(--ink-2); font-style: normal; display: block; margin-top: 7px; padding-left: 11px; border-left: 2px solid var(--line); }
-.sheet-a { margin-top: 11px; }
 
-/* 빈칸형 정답 줄 */
-.sheet-blank {
+/* 번호는 고정 폭 왼쪽 칸. 문제가 줄바꿈돼도 번호 밑으로 파고들지 않습니다 */
+.sheet-q {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 5px 0;
-  border-top: 1px dashed var(--line-soft);
   font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  text-wrap: pretty;
   word-break: keep-all;
 }
-.sheet-blank:first-child { border-top: 0; padding-top: 0; }
-.sheet-blank-label { flex: 0 0 auto; color: var(--ink-3); font-size: 12.5px; font-weight: 600; min-width: 14px; }
-.sheet-blank-ans { color: var(--good); font-weight: 600; }
+.sheet-no {
+  flex: 0 0 auto;
+  min-width: 34px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.sheet-qtext { flex: 1 1 auto; min-width: 0; }
+.sheet-q .qtag { margin-left: 7px; white-space: nowrap; }
+.sheet-q i {
+  color: var(--ink-2);
+  font-style: normal;
+  display: block;
+  margin-top: 5px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
 
-/* 4지선다 보기 줄 */
+/* 답은 문제 글과 같은 선에서 시작합니다 (번호 칸 34px + 사이 8px) */
+.sheet-a { margin-top: 4px; padding-left: 42px; }
+
+.sheet-blank {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 7px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.sheet-blank-label { flex: 0 0 auto; color: var(--ink-3); font-size: 12px; font-weight: 600; }
+.sheet-blank-ans { color: var(--good); font-weight: 600; }
+.sheet-blank .arrow { padding-top: 0; font-size: 12.5px; }
+
 .sheet-choice {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 6px 9px;
-  border-radius: 7px;
+  align-items: baseline;
+  gap: 7px;
   font-size: 14px;
+  line-height: 1.5;
   color: var(--ink-2);
+  padding: 1px 0;
 }
 .sheet-choice .choice-no {
   flex: 0 0 auto;
-  width: 20px; height: 20px;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
 }
-.sheet-choice.correct { background: var(--good-soft); color: var(--ink); font-weight: 500; }
-.sheet-choice.correct .choice-no { border-color: var(--good); color: var(--good); }
-.sheet-choice.correct .choice-mark { color: var(--good); border-color: var(--good); }
+.sheet-choice.correct { color: var(--good); font-weight: 600; }
+.sheet-choice.correct .choice-no { color: var(--good); }
+.sheet-choice .choice-mark { display: none; }
+
+/* 서술형은 모범답안이 곧 답입니다. 상자 없이 그대로 흘립니다 */
+#screen-sheet .keys { gap: 5px; margin-bottom: 3px; }
+#screen-sheet .keys-head { font-size: 11px; }
+#screen-sheet .key { font-size: 11.5px; padding: 1px 7px; }
+#screen-sheet .model {
+  background: none;
+  border: 0;
+  border-left: 2px solid var(--good);
+  border-radius: 0;
+  padding: 0 0 0 9px;
+}
+#screen-sheet .model .anslabel { display: none; }
+#screen-sheet .model p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
 
 .sheet-why {
-  margin-top: 12px;
-  padding-top: 11px;
-  border-top: 1px solid var(--line-soft);
-  font-size: 13.5px;
-  color: var(--ink-2);
+  margin-top: 6px;
+  padding-left: 42px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-3);
   word-break: keep-all;
 }
-.sheet-why .vhead {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  color: var(--ink-3);
-  margin-bottom: 5px;
-}
-.sheet-why b { color: var(--ink); }
+.sheet-why .vhead { display: none; }
+.sheet-why b { color: var(--ink-2); font-weight: 600; }
 .sheet-why u { text-decoration-color: var(--ink-3); text-underline-offset: 2px; }
 
-/* 토글. 해설과 오답 보기를 감춥니다 */
+/* 칩을 끄면 감춥니다. 기본은 둘 다 꺼져 있습니다 */
 #screen-sheet.no-why .sheet-why { display: none; }
 #screen-sheet.no-distractor .sheet-choice:not(.correct) { display: none; }
-#screen-sheet.no-distractor .sheet-choice.correct { margin-top: 2px; }
 
 /* ---------- 인쇄 ---------- */
 
 @media print {
-  body { background: #FFF; color: #000; font-size: 11pt; }
+  body { background: #FFF; color: #000; font-size: 10.5pt; line-height: 1.45; }
   .sheetbar, .sheettools, .actions, .foot, .lede { display: none !important; }
   .wrap { max-width: none; padding: 0; }
-  #screen-sheet header.top { border-bottom: 2px solid #000; margin-bottom: 14px; }
-  .sheet-item {
-    border: 0;
-    border-bottom: 1px solid #BBB;
-    border-radius: 0;
-    padding: 9px 0;
-    margin: 0;
-    background: none;
-  }
-  .sheet-week { break-after: avoid; }
-  .sheet-choice { padding: 2px 0; }
-  .sheet-choice.correct { background: none; font-weight: 700; }
-  .sheet-blank-ans, .model .anslabel, .sheet-choice.correct .choice-no { color: #000; }
-  .model { background: none; border: 1px solid #BBB; }
+  #screen-sheet header.top { border-bottom: 2px solid #000; margin-bottom: 10px; }
+  .sheet-week { position: static; border-bottom: 1.5px solid #000; break-after: avoid; }
+  .sheet-item { padding: 6px 0; border-bottom: 1px solid #DDD; }
+  .sheet-no { background: none; border: 1px solid #999; color: #000; }
+  .sheet-blank-ans, .sheet-choice.correct, .sheet-choice.correct .choice-no { color: #000; font-weight: 700; }
+  #screen-sheet .model { border-left-color: #999; }
+  #screen-sheet .model p { color: #000; }
+  .sheet-why { color: #444; }
 }
-.sheet-blank .arrow { padding-top: 0; font-size: 13px; }
-.sheet-blank { flex-wrap: wrap; }
+
+/* 좁은 화면에서는 번호 칸을 줄입니다 */
+@media (max-width: 420px) {
+  .sheet-no { min-width: 28px; }
+  .sheet-a, .sheet-why { padding-left: 0; }
+}

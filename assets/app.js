@@ -315,14 +315,13 @@
   function sheetItem(q) {
     var art = el("article", "sheet-item");
 
-    var meta = el("div", "sheet-meta");
-    meta.appendChild(el("span", "sheet-no", q.no));
-    if (q.tag) meta.appendChild(el("span", "qtag", q.tag));
-    meta.appendChild(el("span", "qtype", TYPE_LABEL[q.kind](q)));
-    art.appendChild(meta);
-
+    /* 번호와 문제를 한 줄에 붙여 세로 길이를 줄입니다 */
     var qt = el("div", "sheet-q");
-    qt.innerHTML = q.q;
+    qt.appendChild(el("span", "sheet-no", q.no));
+    var body = el("span", "sheet-qtext");
+    body.innerHTML = q.q;
+    if (q.tag) body.appendChild(el("span", "qtag", q.tag));
+    qt.appendChild(body);
     art.appendChild(qt);
 
     var ans = el("div", "sheet-a");

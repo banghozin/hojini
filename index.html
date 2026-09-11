@@ -91,7 +91,7 @@
 </main>
 
 <!-- ============ 한눈에 보기 ============ -->
-<main class="wrap screen" id="screen-sheet" hidden>
+<main class="wrap screen no-why no-distractor" id="screen-sheet" hidden>
 
   <div class="sheetbar">
     <button class="iconbtn" id="btnSheetQuit" aria-label="홈으로">&#10005;</button>
@@ -104,10 +104,10 @@
       <h1>문제와 답</h1>
       <span class="tag" id="sheetCount"></span>
     </div>
-    <p class="lede">전부 펼쳐 둔 화면입니다. 훑어보거나 인쇄해서 보세요.</p>
+    <p class="lede">주차별로 문제와 답만 훑는 화면입니다.</p>
     <div class="sheettools">
-      <button class="chip" id="btnToggleWhy" type="button" aria-pressed="true">해설 보기</button>
-      <button class="chip" id="btnToggleQ" type="button" aria-pressed="true">보기와 오답 보기</button>
+      <button class="chip" id="btnToggleWhy" type="button" aria-pressed="false">해설도 보기</button>
+      <button class="chip" id="btnToggleQ" type="button" aria-pressed="false">틀린 보기도 보기</button>
     </div>
   </header>
 
