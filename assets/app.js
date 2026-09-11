@@ -1,26 +1,51 @@
-/* 콘서 CBT. 주차별 예/복습 테스트 문제은행 앱
+/* 호진이의 공부영역전개. 과목별, 주차별 문제은행 앱
  *
- * 문항은 data/weekNN.js 가 window.QUIZ_BANK 에 밀어 넣습니다.
+ * 문항은 data/<과목>-w<주차>.js 가 window.QUIZ_BANK 에 밀어 넣습니다.
  * 주차를 추가할 때는 파일을 만들고 index.html 에 script 태그 한 줄만 더하면 됩니다.
  *
- * 채점하지 않습니다. 빈칸에 키워드를 적어 보고 `정답 확인`을 누르면 답이 나옵니다.
+ * 문항 형식 세 가지
+ *   blanks  : 빈칸에 키워드를 적는 형식 (콘텐츠서비스디자인)
+ *   choices : 4지선다 (멀티미디어사운드테크닉)
+ *   model   : 사례형 서술. 적어 보고 모범답안과 견줌 (미디어마케팅개론)
+ *
+ * 채점하지 않습니다. 정답 확인을 누르면 답이 나옵니다.
  */
 (function () {
   "use strict";
 
   /* ================= 문항 불러오기 ================= */
 
-  var BANK = (window.QUIZ_BANK || []).slice().sort(function (a, b) { return a.week - b.week; });
+  var BANK = (window.QUIZ_BANK || []).slice().sort(function (a, b) {
+    if (a.subjectKey !== b.subjectKey) return (a.subjectKey || "").localeCompare(b.subjectKey || "");
+    return a.week - b.week;
+  });
+
+  /* 과목 목록. 등장 순서를 유지합니다 */
+  var SUBJECTS = [];
+  BANK.forEach(function (wk) {
+    var key = wk.subjectKey || "etc";
+    var found = null;
+    SUBJECTS.forEach(function (s) { if (s.key === key) found = s; });
+    if (!found) {
+      found = { key: key, name: wk.subject || "과목 없음", weeks: [], count: 0 };
+      SUBJECTS.push(found);
+    }
+    found.weeks.push(wk);
+    found.count += (wk.items || []).length;
+  });
 
   var ALL = [];
   BANK.forEach(function (wk) {
     (wk.items || []).forEach(function (it, i) {
       var copy = {};
       for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) copy[k] = it[k];
+      copy.subject = wk.subject || "";
+      copy.subjectKey = wk.subjectKey || "etc";
       copy.week = wk.week;
       copy.weekTitle = wk.title || "";
       copy.no = copy.no || String(i + 1);
-      copy.id = copy.id || ("w" + wk.week + "-" + (i + 1));
+      copy.id = copy.id || (copy.subjectKey + "-w" + wk.week + "-" + (i + 1));
+      copy.kind = copy.blanks ? "blanks" : (copy.choices ? "choices" : "open");
       copy.blanks = copy.blanks || [];
       ALL.push(copy);
     });
@@ -32,8 +57,8 @@
   /* ================= 저장소 ================= */
   /* 화면 설정과 오답노트만 기억합니다. 점수나 푼 내용은 저장하지 않습니다. */
 
-  var LS_PREF = "konseo.pref.v1";
-  var LS_WRONG = "konseo.wrong.v2";
+  var LS_PREF = "hojin.pref.v1";
+  var LS_WRONG = "hojin.wrong.v1";
 
   function lsGet(key, dflt) {
     try {
@@ -46,13 +71,10 @@
   }
 
   var pref = lsGet(LS_PREF, {});
-
-  /* 오답노트. 문항 id 목록이고, 버튼을 눌러야만 들어갑니다 */
   var wrongSet = lsGet(LS_WRONG, []).filter(function (id) { return BY_ID[id]; });
 
   function saveWrong() { lsSet(LS_WRONG, wrongSet); }
   function inWrong(id) { return wrongSet.indexOf(id) >= 0; }
-
   function toggleWrong(id) {
     var i = wrongSet.indexOf(id);
     if (i >= 0) wrongSet.splice(i, 1); else wrongSet.push(id);
@@ -61,12 +83,34 @@
 
   /* ================= 설정 상태 ================= */
 
+  function subjectByKey(key) {
+    var out = null;
+    SUBJECTS.forEach(function (s) { if (s.key === key) out = s; });
+    return out;
+  }
+
   var sel = {
-    weeks: Array.isArray(pref.weeks) && pref.weeks.length ? pref.weeks : BANK.map(function (w) { return w.week; }),
+    subject: (pref.subject && subjectByKey(pref.subject)) ? pref.subject : (SUBJECTS[0] ? SUBJECTS[0].key : ""),
+    weeks: [],
     count: typeof pref.count === "number" ? pref.count : 0
   };
 
-  function savePref() { lsSet(LS_PREF, sel); }
+  /* 저장된 주차가 지금 과목에 없으면 그 과목 전체로 되돌립니다 */
+  (function initWeeks() {
+    var s = subjectByKey(sel.subject);
+    if (!s) { sel.weeks = []; return; }
+    var mine = s.weeks.map(function (w) { return w.week; });
+    var saved = (pref.weeks || {})[sel.subject];
+    sel.weeks = (Array.isArray(saved) ? saved.filter(function (w) { return mine.indexOf(w) >= 0; }) : []);
+    if (!sel.weeks.length) sel.weeks = mine.slice();
+  })();
+
+  function savePref() {
+    var weeks = (pref.weeks && typeof pref.weeks === "object") ? pref.weeks : {};
+    weeks[sel.subject] = sel.weeks;
+    pref = { subject: sel.subject, weeks: weeks, count: sel.count };
+    lsSet(LS_PREF, pref);
+  }
 
   /* ================= 도우미 ================= */
 
@@ -97,23 +141,68 @@
 
   /* ================= 홈 화면 ================= */
 
-  function poolFor(weeks) {
-    return ALL.filter(function (q) { return weeks.indexOf(q.week) >= 0; });
+  function poolFor(subjectKey, weeks) {
+    return ALL.filter(function (q) {
+      return q.subjectKey === subjectKey && weeks.indexOf(q.week) >= 0;
+    });
+  }
+
+  function kindLabel(s) {
+    var kinds = {};
+    s.weeks.forEach(function (wk) {
+      (wk.items || []).forEach(function (it) {
+        kinds[it.blanks ? "빈칸" : (it.choices ? "4지선다" : "서술")] = 1;
+      });
+    });
+    return Object.keys(kinds).join(", ");
+  }
+
+  function renderSubjects() {
+    var box = $("subjectList");
+    box.textContent = "";
+
+    if (!SUBJECTS.length) {
+      box.appendChild(el("p", "hint", "문항 파일이 없습니다. data 폴더를 확인해 주세요."));
+      return;
+    }
+
+    SUBJECTS.forEach(function (s) {
+      var b = el("button", "subject");
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(sel.subject === s.key));
+
+      b.appendChild(el("span", "subject-name", s.name));
+      var meta = el("span", "subject-meta");
+      meta.appendChild(el("span", null, s.weeks.length + "개 주차"));
+      meta.appendChild(el("span", "dot", ""));
+      meta.appendChild(el("span", null, s.count + "문항"));
+      meta.appendChild(el("span", "dot", ""));
+      meta.appendChild(el("span", null, kindLabel(s)));
+      b.appendChild(meta);
+
+      b.addEventListener("click", function () {
+        if (sel.subject === s.key) return;
+        sel.subject = s.key;
+        sel.weeks = s.weeks.map(function (w) { return w.week; });
+        savePref();
+        renderHome();
+      });
+      box.appendChild(b);
+    });
   }
 
   function renderWeekChips() {
     var box = $("weekChips");
     box.textContent = "";
 
-    if (!BANK.length) {
-      box.appendChild(el("p", "hint", "문항 파일이 없습니다. data/ 폴더를 확인해 주세요."));
-      return;
-    }
+    var s = subjectByKey(sel.subject);
+    if (!s) return;
 
-    BANK.forEach(function (wk) {
+    s.weeks.forEach(function (wk) {
       var b = el("button", "chip", wk.week + "주차");
       b.type = "button";
       b.setAttribute("aria-pressed", String(sel.weeks.indexOf(wk.week) >= 0));
+      b.title = wk.title || "";
       b.addEventListener("click", function () {
         var i = sel.weeks.indexOf(wk.week);
         if (i >= 0) sel.weeks.splice(i, 1); else sel.weeks.push(wk.week);
@@ -124,12 +213,12 @@
       box.appendChild(b);
     });
 
-    if (BANK.length > 1) {
-      var all = el("button", "chip", "종합 (전체)");
+    if (s.weeks.length > 1) {
+      var all = el("button", "chip", "전체");
       all.type = "button";
-      all.setAttribute("aria-pressed", String(sel.weeks.length === BANK.length));
+      all.setAttribute("aria-pressed", String(sel.weeks.length === s.weeks.length));
       all.addEventListener("click", function () {
-        sel.weeks = BANK.map(function (w) { return w.week; });
+        sel.weeks = s.weeks.map(function (w) { return w.week; });
         savePref();
         renderHome();
       });
@@ -138,14 +227,16 @@
   }
 
   function renderHome() {
+    renderSubjects();
     renderWeekChips();
 
-    var pool = poolFor(sel.weeks);
-    $("poolHint").textContent = sel.weeks.length
-      ? sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차, 모두 " + pool.length + "문항"
+    var s = subjectByKey(sel.subject);
+    var pool = poolFor(sel.subject, sel.weeks);
+
+    $("poolHint").textContent = (s && sel.weeks.length)
+      ? s.name + " " + sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차, 모두 " + pool.length + "문항"
       : "주차를 골라 주세요.";
 
-    // 문항 수: 풀보다 큰 선택지는 잠급니다
     Array.prototype.forEach.call($("countSeg").querySelectorAll("button"), function (b) {
       var c = Number(b.getAttribute("data-c"));
       var tooBig = c > 0 && c > pool.length;
@@ -155,12 +246,12 @@
       b.style.opacity = tooBig ? ".35" : "";
     });
 
-    // 오답노트
     var live = wrongSet.filter(function (id) { return BY_ID[id]; });
     if (live.length !== wrongSet.length) { wrongSet = live; saveWrong(); }
     $("btnWrong").hidden = !wrongSet.length;
     $("btnWrong").textContent = "오답노트만 풀기 (" + wrongSet.length + ")";
     $("wrongFoot").hidden = !wrongSet.length;
+    $("btnStart").disabled = !pool.length;
   }
 
   $("countSeg").addEventListener("click", function (e) {
@@ -171,7 +262,7 @@
   });
 
   $("btnStart").addEventListener("click", function () {
-    var pool = poolFor(sel.weeks);
+    var pool = poolFor(sel.subject, sel.weeks);
     if (!pool.length) return;
     startSession(pool, sel.count);
   });
@@ -197,7 +288,8 @@
     return {
       q: q,
       locked: false,
-      value: q.blanks.map(function () { return ""; })
+      value: q.kind === "blanks" ? q.blanks.map(function () { return ""; }) : [""],
+      pick: -1                     // 4지선다에서 고른 번호
     };
   }
 
@@ -207,10 +299,11 @@
     S = {
       list: qs.map(prepare),
       idx: 0,
-      weeks: (function () {
-        var ws = {};
-        qs.forEach(function (q) { ws[q.week] = 1; });
-        return Object.keys(ws).map(Number).sort(function (a, b) { return a - b; });
+      scope: (function () {
+        var subs = {}, ws = {};
+        qs.forEach(function (q) { subs[q.subject] = 1; ws[q.week] = 1; });
+        return Object.keys(subs).join(", ") + " " +
+               Object.keys(ws).map(Number).sort(function (a, b) { return a - b; }).join("주차, ") + "주차";
       })()
     };
     $("totalNo").textContent = String(S.list.length);
@@ -219,40 +312,50 @@
     renderQuestion();
   }
 
-  /* 빈칸을 하나라도 채웠는지. 문항 목록에 점을 찍는 데만 씁니다 */
+  /* 뭐라도 적었거나 골랐는지. 문항 목록에 점을 찍는 데만 씁니다 */
   function hasAny(p) {
+    if (p.q.kind === "choices") return p.pick >= 0;
     return p.value.some(function (v) { return String(v || "").trim() !== ""; });
   }
 
   /* ---------- 문항 렌더 ---------- */
+
+  var TYPE_LABEL = {
+    blanks: function (q) { return "빈칸 " + q.blanks.length + "개"; },
+    choices: function () { return "4지선다"; },
+    open: function () { return "서술형"; }
+  };
 
   function renderQuestion() {
     var p = S.list[S.idx], q = p.q;
 
     $("curNo").textContent = String(S.idx + 1);
     $("progressFill").style.width = ((S.idx) / S.list.length * 100) + "%";
-    $("qWeek").textContent = q.week + "주차 " + q.no + "번";
+    $("qSubject").textContent = q.subject || "";
+    $("qWeek").textContent = q.week + "주차 " + q.no;
     $("qTag").textContent = q.tag || "";
-    $("qType").textContent = q.blanks.length ? "빈칸 " + q.blanks.length + "개" : "";
+    $("qType").textContent = TYPE_LABEL[q.kind](q);
     $("qText").innerHTML = q.q;
 
     var body = $("qBody");
     body.textContent = "";
-    renderBlanks(body, p);
+    if (q.kind === "blanks") renderBlanks(body, p);
+    else if (q.kind === "choices") renderChoices(body, p);
+    else renderOpen(body, p);
 
-    // 해설
     if (p.locked) showWhy(p);
     else { $("verdict").hidden = true; $("verdict").textContent = ""; }
 
     syncNoteBtn();
 
-    // 버튼
     $("btnPrev").disabled = (S.idx === 0);
     $("btnCheck").hidden = p.locked;
     $("btnNext").textContent = (S.idx === S.list.length - 1) ? "다 봤어요" : "다음";
 
     renderGrid();
   }
+
+  /* ---------- 빈칸형 ---------- */
 
   function blankCell(p, i, skipLabel) {
     var b = p.q.blanks[i];
@@ -300,7 +403,6 @@
     var box = el("div", "blanks");
 
     for (var i = 0; i < q.blanks.length;) {
-      // 짝 배치일 때는 시험지 표처럼 번호를 두 칸 앞에 한 번만 답니다
       if (pair && i + 1 < q.blanks.length) {
         var prow = el("div", "blank-row pair");
         if (q.blanks[i].label) prow.appendChild(el("span", "pair-no", q.blanks[i].label));
@@ -316,6 +418,76 @@
         i += 1;
       }
     }
+    body.appendChild(box);
+  }
+
+  /* ---------- 4지선다 ---------- */
+
+  function renderChoices(body, p) {
+    var q = p.q;
+    var box = el("div", "choices");
+
+    q.choices.forEach(function (text, i) {
+      var b = el("button", "choice");
+      b.type = "button";
+      b.appendChild(el("span", "choice-no", String(i + 1)));
+      b.appendChild(el("span", "choice-text", text));
+
+      if (p.pick === i) b.classList.add("picked");
+
+      if (p.locked) {
+        b.disabled = true;
+        if (i === q.answer) {
+          b.classList.add("correct");
+          b.appendChild(el("span", "choice-mark", "정답"));
+        } else if (p.pick === i) {
+          b.classList.add("wrong");
+          b.appendChild(el("span", "choice-mark", "내가 고른 것"));
+        }
+      } else {
+        b.addEventListener("click", function () {
+          p.pick = i;
+          renderQuestion();
+        });
+      }
+      box.appendChild(b);
+    });
+    body.appendChild(box);
+  }
+
+  /* ---------- 서술형 ---------- */
+
+  function renderOpen(body, p) {
+    var q = p.q;
+    var box = el("div", "openwrap");
+
+    var ta = document.createElement("textarea");
+    ta.className = "open-in";
+    ta.rows = 5;
+    ta.value = p.value[0] || "";
+    ta.placeholder = p.locked ? "" : "상황에 맞는 대응을 적어 보세요";
+    ta.setAttribute("aria-label", "답안 입력");
+    if (p.locked) ta.readOnly = true;
+    else ta.addEventListener("input", function () {
+      p.value[0] = ta.value;
+      renderGrid();
+    });
+    box.appendChild(ta);
+
+    if (q.keys && q.keys.length) {
+      var keys = el("div", "keys");
+      keys.appendChild(el("span", "keys-head", p.locked ? "들어갔어야 할 핵심어" : "핵심어 힌트"));
+      q.keys.forEach(function (k) { keys.appendChild(el("span", "key", k)); });
+      box.appendChild(keys);
+    }
+
+    if (p.locked && q.model) {
+      var m = el("div", "model");
+      m.appendChild(el("span", "anslabel", "모범답안"));
+      m.appendChild(el("p", null, q.model));
+      box.appendChild(m);
+    }
+
     body.appendChild(box);
   }
 
@@ -409,8 +581,17 @@
     if ($("screen-quiz").hidden || !S) return;
     if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
 
+    var p = S.list[S.idx];
+
+    /* 4지선다는 숫자키로 고릅니다 */
+    if (p.q.kind === "choices" && !p.locked && /^[1-4]$/.test(e.key)) {
+      var i = Number(e.key) - 1;
+      if (i < p.q.choices.length) { p.pick = i; renderQuestion(); }
+      return;
+    }
+
     if (e.key === "Enter") {
-      if (S.list[S.idx].locked) goNext(); else revealNow();
+      if (p.locked) goNext(); else revealNow();
     } else if (e.key === "ArrowLeft") {
       if (S.idx > 0) { S.idx--; renderQuestion(); }
     } else if (e.key === "ArrowRight") {
@@ -421,7 +602,7 @@
   /* ================= 다 본 뒤 ================= */
 
   function finishUp() {
-    $("doneScope").textContent = S.weeks.join("주차, ") + "주차, " + S.list.length + "문항";
+    $("doneScope").textContent = S.scope + ", " + S.list.length + "문항";
     show("done");
   }
 
@@ -439,9 +620,6 @@
 
   /* ================= 시작 ================= */
 
-  if (!ALL.length) {
-    $("btnStart").disabled = true;
-  }
   renderHome();
   show("home");
 })();

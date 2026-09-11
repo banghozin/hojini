@@ -13,6 +13,8 @@
 
 window.QUIZ_BANK = window.QUIZ_BANK || [];
 window.QUIZ_BANK.push({
+  subject: "콘텐츠서비스디자인",
+  subjectKey: "konseo",
   week: 2,
   title: "예/복습 테스트",
   items: [

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>콘서 CBT</title>
-<meta name="description" content="콘텐츠 서비스 디자인 주차별 예/복습 테스트를 빈칸에 적어 보며 외우는 곳.">
+<title>호진이의 공부영역전개</title>
+<meta name="description" content="과목별, 주차별로 나눠 둔 시험 대비 문제은행. 적어 보고 정답을 확인하세요.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
@@ -18,19 +18,24 @@
 
   <header class="top">
     <div class="brand">
-      <h1>콘서 CBT</h1>
-      <span class="tag">콘텐츠 서비스 디자인</span>
+      <h1>호진이의 공부영역전개</h1>
+      <span class="tag" id="brandTag">3학년 2학기</span>
     </div>
-    <p class="lede">예/복습 테스트 문제 그대로입니다. 빈칸에 적어 보고 정답을 확인하세요.</p>
+    <p class="lede">과목을 고르고 주차를 고르면 됩니다. 채점은 하지 않습니다.</p>
   </header>
 
   <section class="block">
-    <h2 class="sec">범위</h2>
+    <h2 class="sec">과목</h2>
+    <div class="subjects" id="subjectList"></div>
+  </section>
+
+  <section class="block" id="weekBlock">
+    <h2 class="sec">주차</h2>
     <div class="chips" id="weekChips"></div>
     <p class="hint" id="poolHint">&nbsp;</p>
   </section>
 
-  <section class="block">
+  <section class="block" id="countBlock">
     <h2 class="sec">문항 수</h2>
     <div class="seg" id="countSeg">
       <button data-c="0" aria-pressed="true">전체</button>
@@ -45,7 +50,7 @@
   </div>
 
   <footer class="foot">
-    <span>채점하지 않습니다. 적은 내용은 저장되지 않고, 새로고침하면 처음부터입니다.</span>
+    <span>적은 내용은 저장되지 않고, 새로고침하면 처음부터입니다.</span>
     <span id="wrongFoot" hidden>
       오답노트는 이 기기에만 저장됩니다.
       <button class="linkbtn" id="btnClearWrong">오답노트 비우기</button>
@@ -66,6 +71,7 @@
 
   <article class="qwrap">
     <div class="qmeta">
+      <span class="qsubject" id="qSubject"></span>
       <span class="qno" id="qWeek">2주차</span>
       <span class="qtag" id="qTag"></span>
       <span class="qtype" id="qType"></span>
@@ -87,7 +93,7 @@
 <main class="wrap screen" id="screen-done" hidden>
   <header class="top">
     <div class="brand">
-      <h1>다 봤습니다</h1>
+      <h1>영역 전개 완료</h1>
       <span class="tag" id="doneScope"></span>
     </div>
     <p class="lede">헷갈렸던 문항은 한 번 더 돌려 보세요.</p>
@@ -99,8 +105,10 @@
   </div>
 </main>
 
-<script src="data/week02.js"></script>
-<script src="data/week03.js"></script>
+<script src="data/konseo-w02.js"></script>
+<script src="data/konseo-w03.js"></script>
+<script src="data/sound-w02.js"></script>
+<script src="data/media-w02.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
