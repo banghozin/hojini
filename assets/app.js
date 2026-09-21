@@ -601,7 +601,19 @@
       var keys = el("div", "keys");
       keys.appendChild(el("span", "keys-head", p.locked ? "들어갔어야 할 핵심어" : "핵심어 힌트"));
       q.keys.forEach(function (k) { keys.appendChild(el("span", "key", k)); });
-      box.appendChild(keys);
+
+      /* 아직 안 풀었으면 힌트를 가려 둡니다. 눌러야 펴집니다 */
+      if (p.locked || p.hint) {
+        box.appendChild(keys);
+      } else {
+        var hintBtn = el("button", "hintbtn", "핵심어 힌트 보기");
+        hintBtn.type = "button";
+        hintBtn.addEventListener("click", function () {
+          p.hint = true;
+          box.replaceChild(keys, hintBtn);
+        });
+        box.appendChild(hintBtn);
+      }
     }
 
     if (p.locked && q.model) {

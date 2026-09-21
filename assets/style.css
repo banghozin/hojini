@@ -573,6 +573,22 @@ h2.sec { font-family: var(--display); font-weight: 700; font-size: 17px; margin:
   color: var(--ink-2);
 }
 
+/* 핵심어를 가려 두는 버튼. 누르면 그 자리에 핵심어가 들어섭니다 */
+.hintbtn {
+  appearance: none;
+  align-self: flex-start;
+  border: 1px dashed var(--line);
+  background: none;
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.hintbtn:hover { border-style: solid; color: var(--ink-2); }
+.hintbtn:active { background: var(--surface-2); }
+
 .model {
   padding: 13px 15px;
   border: 1px solid var(--good);
