@@ -327,14 +327,15 @@
     var ans = el("div", "sheet-a");
 
     if (q.kind === "blanks") {
-      /* layout "pair" 는 「속성 → 대응 방법」처럼 두 칸이 한 쌍입니다 */
-      var pair = (q.layout === "pair");
+      /* layout "pair" 는 속성 → 대응 방법처럼 두 칸이 한 쌍, "vs" 는 비교표입니다 */
+      var pair = (q.layout === "pair" || q.layout === "vs");
+      var sep = (q.layout === "vs") ? "vs" : "→";
       for (var i = 0; i < q.blanks.length;) {
         var row = el("div", "sheet-blank");
         if (pair && i + 1 < q.blanks.length) {
           if (q.blanks[i].label) row.appendChild(el("span", "sheet-blank-label", q.blanks[i].label));
           row.appendChild(el("span", "sheet-blank-ans", q.blanks[i].answer));
-          row.appendChild(el("span", "arrow", "→"));
+          row.appendChild(el("span", "arrow", sep));
           row.appendChild(el("span", "sheet-blank-ans", q.blanks[i + 1].answer));
           i += 2;
         } else {
@@ -522,7 +523,9 @@
 
   function renderBlanks(body, p) {
     var q = p.q;
-    var pair = (q.layout === "pair");
+    /* pair 는 왼쪽 → 오른쪽, vs 는 비교표라 화살표 대신 가운뎃말을 넣습니다 */
+    var pair = (q.layout === "pair" || q.layout === "vs");
+    var sep = (q.layout === "vs") ? "vs" : "→";
     var box = el("div", "blanks");
 
     for (var i = 0; i < q.blanks.length;) {
@@ -530,7 +533,7 @@
         var prow = el("div", "blank-row pair");
         if (q.blanks[i].label) prow.appendChild(el("span", "pair-no", q.blanks[i].label));
         prow.appendChild(blankCell(p, i, true));
-        prow.appendChild(el("span", "arrow", "→"));
+        prow.appendChild(el("span", "arrow", sep));
         prow.appendChild(blankCell(p, i + 1, true));
         box.appendChild(prow);
         i += 2;
