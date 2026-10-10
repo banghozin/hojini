@@ -122,10 +122,10 @@ window.QUIZ_BANK.push({
       id: "w6-07", no: "7", tag: "FGI 장단점",
       q: "<b>FGI의 장단점</b>을 쓰시오.",
       blanks: [
-        { label: "장점 1", answer: "비용이 저렴하다" },
+        { label: "장점 1", answer: "비용이 저렴하고" },
         { label: "장점 2", answer: "여러 사람이 동시에 참여해서 시너지가 난다" },
-        { label: "단점 1", answer: "진행자의 능력에 따라 조사결과 차이가 심하다" },
-        { label: "단점 2", answer: "비체계적이여서 분석과 해석이 곤란하다" },
+        { label: "단점 1", answer: "진행자의 능력에 따라 조사결과 차이가 심하고" },
+        { label: "단점 2", answer: "비체계적이여서 분석과 해석이 곤란하며" },
         { label: "단점 3", answer: "인터뷰 내용을 일반화하기 힘들다" }
       ],
       why:
