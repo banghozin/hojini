@@ -56,7 +56,7 @@ window.QUIZ_BANK.push({
         { label: "②", answer: "수혜자" },
         { label: "③", answer: "각 각의 주요(핵심)관계자" },
         { label: "④", answer: "주변관계자" },
-        { label: "⑤", answer: "제공자의 전면(주활동)부" },
+        { label: "⑤", answer: "가치사슬 측면에서 제공자의 전면(주활동)부" },
         { label: "⑥", answer: "후면(지원활동, 보조활동)" },
         { label: "⑦", answer: "서비스 생태계 측면" }
       ],
