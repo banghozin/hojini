@@ -470,7 +470,9 @@
     $("curNo").textContent = String(S.idx + 1);
     $("progressFill").style.width = ((S.idx) / S.list.length * 100) + "%";
     $("qSubject").textContent = q.subject || "";
-    $("qWeek").textContent = q.week + "주차 " + q.no;
+    /* 몇 주차 몇 번인지가 힌트가 되지 않도록 푸는 화면에서는 숨깁니다. 한눈에 보기에는 그대로 나옵니다 */
+    $("qWeek").textContent = "";
+    $("qWeek").hidden = true;
     $("qTag").textContent = q.tag || "";
     $("qType").textContent = TYPE_LABEL[q.kind](q);
     $("qText").innerHTML = q.q;
