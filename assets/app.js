@@ -96,6 +96,7 @@
   var sel = {
     subject: (pref.subject && subjectByKey(pref.subject)) ? pref.subject : (SUBJECTS[0] ? SUBJECTS[0].key : ""),
     weeks: [],
+    types: [],
     count: typeof pref.count === "number" ? pref.count : 0
   };
 
@@ -109,10 +110,35 @@
     if (!sel.weeks.length) sel.weeks = mine.slice();
   })();
 
+  /* 유형 칩. 문항에 type 이 붙은 과목(지금은 콘서)에만 나옵니다 */
+  var TYPE_ORDER = [
+    { key: "abbrKey", name: "[중간]핵심어와 약어" },
+    { key: "abbrFull", name: "[중간]약어와 약어해석" },
+    { key: "order", name: "[중간]순서 및 5개 이상 답변 문제 모음" },
+    { key: "list", name: "[중간]목록 쓰기(4개 이하)" },
+    { key: "essay", name: "[중간]서술형 풀기" }
+  ];
+
+  function typesOf(subjectKey) {
+    var have = {};
+    ALL.forEach(function (q) { if (q.subjectKey === subjectKey && q.type) have[q.type] = 1; });
+    return TYPE_ORDER.filter(function (t) { return have[t.key]; }).map(function (t) { return t.key; });
+  }
+
+  function initTypes() {
+    var mine = typesOf(sel.subject);
+    var saved = (pref.types || {})[sel.subject];
+    sel.types = (Array.isArray(saved) ? saved.filter(function (t) { return mine.indexOf(t) >= 0; }) : []);
+    if (!sel.types.length) sel.types = mine.slice();
+  }
+  initTypes();
+
   function savePref() {
     var weeks = (pref.weeks && typeof pref.weeks === "object") ? pref.weeks : {};
     weeks[sel.subject] = sel.weeks;
-    pref = { subject: sel.subject, weeks: weeks, count: sel.count };
+    var types = (pref.types && typeof pref.types === "object") ? pref.types : {};
+    types[sel.subject] = sel.types;
+    pref = { subject: sel.subject, weeks: weeks, types: types, count: sel.count };
     lsSet(LS_PREF, pref);
   }
 
@@ -146,8 +172,10 @@
   /* ================= 홈 화면 ================= */
 
   function poolFor(subjectKey, weeks) {
+    var useTypes = typesOf(subjectKey).length > 0;
     return ALL.filter(function (q) {
-      return q.subjectKey === subjectKey && weeks.indexOf(q.week) >= 0;
+      return q.subjectKey === subjectKey && weeks.indexOf(q.week) >= 0 &&
+             (!useTypes || sel.types.indexOf(q.type) >= 0);
     });
   }
 
@@ -196,6 +224,7 @@
         if (sel.subject === s.key) return;
         sel.subject = s.key;
         sel.weeks = s.weeks.map(function (w) { return w.week; });
+        sel.types = typesOf(s.key);
         savePref();
         renderHome();
       });
@@ -238,15 +267,52 @@
     }
   }
 
+  function renderTypeChips() {
+    var box = $("typeChips");
+    box.textContent = "";
+    var mine = typesOf(sel.subject);
+    box.hidden = $("typeHead").hidden = !mine.length;
+    if (!mine.length) return;
+
+    TYPE_ORDER.forEach(function (t) {
+      if (mine.indexOf(t.key) < 0) return;
+      var b = el("button", "chip", t.name);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(sel.types.indexOf(t.key) >= 0));
+      b.addEventListener("click", function () {
+        var i = sel.types.indexOf(t.key);
+        if (i >= 0) sel.types.splice(i, 1); else sel.types.push(t.key);
+        if (!sel.types.length) sel.types = [t.key];
+        savePref();
+        renderHome();
+      });
+      box.appendChild(b);
+    });
+
+    if (mine.length > 1) {
+      var all = el("button", "chip", "전체");
+      all.type = "button";
+      all.setAttribute("aria-pressed", String(sel.types.length === mine.length));
+      all.addEventListener("click", function () {
+        sel.types = mine.slice();
+        savePref();
+        renderHome();
+      });
+      box.appendChild(all);
+    }
+  }
+
   function renderHome() {
     renderSubjects();
     renderWeekChips();
+    renderTypeChips();
 
     var s = subjectByKey(sel.subject);
     var pool = poolFor(sel.subject, sel.weeks);
 
     $("poolHint").textContent = (s && sel.weeks.length)
-      ? s.name + " " + sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차, 모두 " + pool.length + "문항"
+      ? s.name + " " + sel.weeks.slice().sort(function (a, b) { return a - b; }).join("주차, ") + "주차" +
+        (typesOf(sel.subject).length ? ", 유형 " + sel.types.length + "개" : "") + ", 모두 " + pool.length + "문항"
       : "주차를 골라 주세요.";
 
     Array.prototype.forEach.call($("countSeg").querySelectorAll("button"), function (b) {
