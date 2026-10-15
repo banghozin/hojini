@@ -80,6 +80,10 @@
     if (i >= 0) wrongSet.splice(i, 1); else wrongSet.push(id);
     saveWrong();
   }
+  /* 오답노트는 과목별로 나눠 보여 줍니다. 저장은 한 목록이고 문항 id로 과목을 가립니다 */
+  function wrongOf(subjectKey) {
+    return wrongSet.filter(function (id) { return BY_ID[id] && BY_ID[id].subjectKey === subjectKey; });
+  }
 
   /* ================= 설정 상태 ================= */
 
@@ -256,9 +260,10 @@
 
     var live = wrongSet.filter(function (id) { return BY_ID[id]; });
     if (live.length !== wrongSet.length) { wrongSet = live; saveWrong(); }
-    $("btnWrong").hidden = !wrongSet.length;
-    $("btnWrong").textContent = "오답노트만 풀기 (" + wrongSet.length + ")";
-    $("wrongFoot").hidden = !wrongSet.length;
+    var mine = wrongOf(sel.subject);
+    $("btnWrong").hidden = !mine.length;
+    $("btnWrong").textContent = "오답노트만 풀기 (" + mine.length + ")";
+    $("wrongFoot").hidden = !mine.length;
     $("btnStart").disabled = !pool.length;
   }
 
@@ -272,18 +277,23 @@
   $("btnStart").addEventListener("click", function () {
     var pool = poolFor(sel.subject, sel.weeks);
     if (!pool.length) return;
-    startSession(pool, sel.count);
+    /* pin 이 붙은 문항은 고른 주차와 상관없이 맨 앞에 pin 순서대로 둡니다 */
+    var pinned = ALL.filter(function (q) { return q.subjectKey === sel.subject && q.pin; })
+                    .sort(function (a, b) { return a.pin - b.pin; });
+    startSession(pool, sel.count, pinned);
   });
 
   $("btnWrong").addEventListener("click", function () {
-    var pool = wrongSet.map(function (id) { return BY_ID[id]; }).filter(Boolean);
+    var pool = wrongOf(sel.subject).map(function (id) { return BY_ID[id]; });
     if (!pool.length) return;
     startSession(pool, 0);
   });
 
   $("btnClearWrong").addEventListener("click", function () {
-    if (!window.confirm("오답노트를 비울까요?")) return;
-    wrongSet = [];
+    var s = subjectByKey(sel.subject);
+    if (!window.confirm((s ? s.name + " " : "") + "오답노트를 비울까요?")) return;
+    var mine = wrongOf(sel.subject);
+    wrongSet = wrongSet.filter(function (id) { return mine.indexOf(id) < 0; });
     saveWrong();
     renderHome();
   });
@@ -422,9 +432,13 @@
     };
   }
 
-  function startSession(pool, count) {
-    var qs = shuffle(pool);
-    if (count > 0 && count < qs.length) qs = qs.slice(0, count);
+  function startSession(pool, count, pinned) {
+    pinned = pinned || [];
+    var pinIds = pinned.map(function (q) { return q.id; });
+    var qs = shuffle(pool.filter(function (q) { return pinIds.indexOf(q.id) < 0; }));
+    var room = count > 0 ? Math.max(count - pinned.length, 0) : qs.length;
+    if (room < qs.length) qs = qs.slice(0, room);
+    qs = pinned.concat(qs);
     S = {
       list: qs.map(prepare),
       idx: 0,
