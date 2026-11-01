@@ -163,11 +163,58 @@
   }
 
   function show(name) {
-    ["home", "quiz", "sheet", "done"].forEach(function (s) {
+    ["main", "exam", "home", "quiz", "sheet", "done"].forEach(function (s) {
       $("screen-" + s).hidden = (s !== name);
     });
     window.scrollTo({ top: 0, behavior: "auto" });
+    /* 뒤로가기: 메인 위에 기록을 한 칸만 쌓아 어느 화면에서 눌러도 메인으로 옵니다 */
+    if (name !== "main" && !inHistory()) history.pushState({ hojini: 1 }, "");
   }
+
+  function inHistory() { return !!(history.state && history.state.hojini); }
+
+  /* ================= 메인과 시험 목록 ================= */
+  /* 지금 문항은 전부 3학년 2학기 중간고사입니다. 다른 시험이 생기면 여기에 더합니다 */
+
+  var TERM = "3학년 2학기";
+  var EXAM = "중간고사";
+
+  function menuButton(name, metaText, onClick) {
+    var b = el("button", "subject");
+    b.type = "button";
+    b.appendChild(el("span", "subject-name", name));
+    b.appendChild(el("span", "subject-meta", metaText));
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderMenus() {
+    var meta = SUBJECTS.length + "과목, " + ALL.length + "문항";
+    $("termList").textContent = "";
+    $("termList").appendChild(menuButton(TERM, EXAM + ", " + meta, function () { show("exam"); }));
+    $("examTerm").textContent = TERM;
+    $("examList").textContent = "";
+    $("examList").appendChild(menuButton(EXAM, meta, function () { renderHome(); show("home"); }));
+    $("brandTag").textContent = TERM + " " + EXAM;
+  }
+
+  function goMain() {
+    if (inHistory()) history.back(); else show("main");
+  }
+
+  $("btnExamBack").addEventListener("click", goMain);
+  $("btnHomeBack").addEventListener("click", function () { show("exam"); });
+
+  window.addEventListener("popstate", function () {
+    if (inHistory()) return;
+    if (!$("screen-quiz").hidden && S &&
+        !window.confirm("그만두고 메인으로 갈까요? 지금까지 적은 내용은 사라집니다.")) {
+      history.pushState({ hojini: 1 }, "");
+      return;
+    }
+    S = null;
+    show("main");
+  });
 
   /* ================= 홈 화면 ================= */
 
@@ -842,6 +889,9 @@
 
   /* ================= 시작 ================= */
 
+  renderMenus();
   renderHome();
-  show("home");
+  /* 새로고침하면 메인부터입니다. 전에 쌓인 기록 한 칸은 걷어 냅니다 */
+  if (inHistory()) history.back();
+  show("main");
 })();

@@ -13,13 +13,51 @@
 </head>
 <body>
 
-<!-- ============ 홈 ============ -->
-<main class="wrap screen" id="screen-home">
+<!-- ============ 메인 (학기) ============ -->
+<main class="wrap screen" id="screen-main">
+  <header class="top">
+    <div class="brand">
+      <h1>호지니</h1>
+    </div>
+    <p class="lede">학기를 고르면 됩니다.</p>
+  </header>
+
+  <section class="block">
+    <h2 class="sec">학기</h2>
+    <div class="subjects" id="termList"></div>
+  </section>
+</main>
+
+<!-- ============ 시험 ============ -->
+<main class="wrap screen" id="screen-exam" hidden>
+  <div class="sheetbar">
+    <button class="iconbtn" id="btnExamBack" aria-label="학기 목록으로">&#8592;</button>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <h1 id="examTerm"></h1>
+    </div>
+    <p class="lede">시험을 고르면 됩니다.</p>
+  </header>
+
+  <section class="block">
+    <h2 class="sec">시험</h2>
+    <div class="subjects" id="examList"></div>
+  </section>
+</main>
+
+<!-- ============ 홈 (과목) ============ -->
+<main class="wrap screen" id="screen-home" hidden>
+
+  <div class="sheetbar">
+    <button class="iconbtn" id="btnHomeBack" aria-label="시험 목록으로">&#8592;</button>
+  </div>
 
   <header class="top">
     <div class="brand">
       <h1>호지니</h1>
-      <span class="tag" id="brandTag">3학년 2학기</span>
+      <span class="tag" id="brandTag"></span>
     </div>
     <p class="lede">과목을 고르고 주차를 고르면 됩니다. 채점은 하지 않습니다.</p>
   </header>
