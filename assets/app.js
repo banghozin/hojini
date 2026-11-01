@@ -162,16 +162,28 @@
     return e;
   }
 
-  function show(name) {
-    ["main", "exam", "home", "quiz", "sheet", "done"].forEach(function (s) {
+  /* 화면의 깊이. 뒤로가기를 누르면 한 단계씩 올라갑니다 */
+  var LEVEL = { main: 0, exam: 1, home: 2, quiz: 3, sheet: 3, done: 3 };
+  var LEVEL_SCREEN = ["main", "exam", "home"];
+  var current = "main";
+
+  function historyDepth() { return (history.state && history.state.depth) || 0; }
+
+  function paint(name) {
+    current = name;
+    Object.keys(LEVEL).forEach(function (s) {
       $("screen-" + s).hidden = (s !== name);
     });
     window.scrollTo({ top: 0, behavior: "auto" });
-    /* 뒤로가기: 메인 위에 기록을 한 칸만 쌓아 어느 화면에서 눌러도 메인으로 옵니다 */
-    if (name !== "main" && !inHistory()) history.pushState({ hojini: 1 }, "");
   }
 
-  function inHistory() { return !!(history.state && history.state.hojini); }
+  /* 브라우저 기록을 화면 깊이에 맞춥니다. 깊어지면 쌓고 얕아지면 되돌립니다 */
+  function show(name) {
+    paint(name);
+    var want = LEVEL[name], have = historyDepth();
+    if (want < have) history.go(want - have);
+    for (; have < want; have++) history.pushState({ depth: have + 1 }, "");
+  }
 
   /* ================= 메인과 시험 목록 ================= */
   /* 지금 문항은 전부 3학년 2학기 중간고사입니다. 다른 시험이 생기면 여기에 더합니다 */
@@ -198,22 +210,21 @@
     $("brandTag").textContent = TERM + " " + EXAM;
   }
 
-  function goMain() {
-    if (inHistory()) history.back(); else show("main");
-  }
-
-  $("btnExamBack").addEventListener("click", goMain);
+  $("btnExamBack").addEventListener("click", function () { show("main"); });
   $("btnHomeBack").addEventListener("click", function () { show("exam"); });
 
   window.addEventListener("popstate", function () {
-    if (inHistory()) return;
-    if (!$("screen-quiz").hidden && S &&
-        !window.confirm("그만두고 메인으로 갈까요? 지금까지 적은 내용은 사라집니다.")) {
-      history.pushState({ hojini: 1 }, "");
+    var depth = historyDepth();
+    /* 앱 안의 버튼으로 이미 옮겨 간 경우에는 할 일이 없습니다 */
+    if (depth >= LEVEL[current]) return;
+    if (current === "quiz" && S &&
+        !window.confirm("그만두고 홈으로 갈까요? 지금까지 적은 내용은 사라집니다.")) {
+      history.pushState({ depth: LEVEL.quiz }, "");
       return;
     }
     S = null;
-    show("main");
+    renderHome();
+    paint(LEVEL_SCREEN[depth]);
   });
 
   /* ================= 홈 화면 ================= */
@@ -891,7 +902,6 @@
 
   renderMenus();
   renderHome();
-  /* 새로고침하면 메인부터입니다. 전에 쌓인 기록 한 칸은 걷어 냅니다 */
-  if (inHistory()) history.back();
+  /* 새로고침하면 메인부터입니다. 전에 쌓인 기록은 show 가 되돌립니다 */
   show("main");
 })();
