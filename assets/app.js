@@ -20,25 +20,21 @@
     return a.week - b.week;
   });
 
-  /* 과목 목록. 등장 순서를 유지합니다 */
-  var SUBJECTS = [];
-  BANK.forEach(function (wk) {
-    var key = wk.subjectKey || "etc";
-    var found = null;
-    SUBJECTS.forEach(function (s) { if (s.key === key) found = s; });
-    if (!found) {
-      found = { key: key, name: wk.subject || "과목 없음", weeks: [], count: 0 };
-      SUBJECTS.push(found);
-    }
-    found.weeks.push(wk);
-    found.count += (wk.items || []).length;
-  });
+  /* 시험. 주차 파일에 exam 이 없으면 중간고사입니다.
+   * 기말 범위가 처음부터 끝까지인 과목은 FINAL_CARRY 규칙에 맞는 중간고사 문항을 기말고사에도 넣습니다 */
+  var EXAMS = ["중간고사", "기말고사"];
+  var FINAL_CARRY = {
+    /* 멀미사. 수업 퀴즈만 넣고, 교수님이 안 낸다고 하신 문항은 뺍니다 */
+    sound: function (q) { return /수업 퀴즈/.test(q.tag || "") && !/출제 제외/.test(q.tag || ""); }
+  };
 
-  var ALL = [];
+  var ITEMS = [];
   BANK.forEach(function (wk) {
     (wk.items || []).forEach(function (it, i) {
       var copy = {};
       for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) copy[k] = it[k];
+      copy.raw = it;
+      copy.exam = wk.exam || "중간고사";
       copy.subject = wk.subject || "";
       copy.subjectKey = wk.subjectKey || "etc";
       copy.week = wk.week;
@@ -47,12 +43,46 @@
       copy.id = copy.id || (copy.subjectKey + "-w" + wk.week + "-" + (i + 1));
       copy.kind = copy.blanks ? "blanks" : (copy.choices ? "choices" : "open");
       copy.blanks = copy.blanks || [];
-      ALL.push(copy);
+      ITEMS.push(copy);
     });
   });
 
   var BY_ID = {};
-  ALL.forEach(function (q) { BY_ID[q.id] = q; });
+  ITEMS.forEach(function (q) { BY_ID[q.id] = q; });
+
+  function inExam(q, exam) {
+    if (q.exam === exam) return true;
+    var carry = FINAL_CARRY[q.subjectKey];
+    return exam === "기말고사" && q.exam === "중간고사" && !!carry && carry(q);
+  }
+
+  /* 고른 시험의 문항과 과목 목록. 과목은 등장 순서를 유지합니다 */
+  var EXAM = "중간고사";
+  var ALL = [], SUBJECTS = [], IN_EXAM = {};
+
+  function buildExam(exam) {
+    EXAM = exam;
+    ALL = ITEMS.filter(function (q) { return inExam(q, exam); });
+    SUBJECTS = [];
+    IN_EXAM = {};
+    ALL.forEach(function (q) {
+      IN_EXAM[q.id] = 1;
+      var s = null;
+      SUBJECTS.forEach(function (x) { if (x.key === q.subjectKey) s = x; });
+      if (!s) {
+        s = { key: q.subjectKey, name: q.subject || "과목 없음", weeks: [], count: 0 };
+        SUBJECTS.push(s);
+      }
+      var wk = s.weeks.length ? s.weeks[s.weeks.length - 1] : null;
+      if (!wk || wk.week !== q.week) {
+        wk = { week: q.week, title: q.weekTitle, items: [] };
+        s.weeks.push(wk);
+      }
+      wk.items.push(q.raw);
+      s.count++;
+    });
+  }
+  buildExam(EXAM);
 
   /* ================= 저장소 ================= */
   /* 화면 설정과 오답노트만 기억합니다. 점수나 푼 내용은 저장하지 않습니다. */
@@ -81,8 +111,11 @@
     saveWrong();
   }
   /* 오답노트는 과목별로 나눠 보여 줍니다. 저장은 한 목록이고 문항 id로 과목을 가립니다 */
+  /* 지금 고른 시험에 있는 문항만 셉니다 */
   function wrongOf(subjectKey) {
-    return wrongSet.filter(function (id) { return BY_ID[id] && BY_ID[id].subjectKey === subjectKey; });
+    return wrongSet.filter(function (id) {
+      return BY_ID[id] && IN_EXAM[id] && BY_ID[id].subjectKey === subjectKey;
+    });
   }
 
   /* ================= 설정 상태 ================= */
@@ -93,22 +126,34 @@
     return out;
   }
 
+  /* 주차와 유형 설정은 시험마다 따로 기억합니다. 중간고사는 예전 저장 형식 그대로 과목 키만 씁니다 */
+  function prefKey(subjectKey) {
+    return EXAM === "중간고사" ? subjectKey : EXAM + "|" + subjectKey;
+  }
+
   var sel = {
-    subject: (pref.subject && subjectByKey(pref.subject)) ? pref.subject : (SUBJECTS[0] ? SUBJECTS[0].key : ""),
+    subject: "",
     weeks: [],
     types: [],
     count: typeof pref.count === "number" ? pref.count : 0
   };
 
   /* 저장된 주차가 지금 과목에 없으면 그 과목 전체로 되돌립니다 */
-  (function initWeeks() {
+  function initWeeks() {
     var s = subjectByKey(sel.subject);
     if (!s) { sel.weeks = []; return; }
     var mine = s.weeks.map(function (w) { return w.week; });
-    var saved = (pref.weeks || {})[sel.subject];
+    var saved = (pref.weeks || {})[prefKey(sel.subject)];
     sel.weeks = (Array.isArray(saved) ? saved.filter(function (w) { return mine.indexOf(w) >= 0; }) : []);
     if (!sel.weeks.length) sel.weeks = mine.slice();
-  })();
+  }
+
+  function initSubject() {
+    var saved = EXAM === "중간고사" ? pref.subject : (pref.examSubject || {})[EXAM];
+    sel.subject = (saved && subjectByKey(saved)) ? saved : (SUBJECTS[0] ? SUBJECTS[0].key : "");
+    initWeeks();
+  }
+  initSubject();
 
   /* 유형 칩. 문항에 type 이 붙은 과목(지금은 콘서)에만 나옵니다 */
   var TYPE_ORDER = [
@@ -127,18 +172,28 @@
 
   function initTypes() {
     var mine = typesOf(sel.subject);
-    var saved = (pref.types || {})[sel.subject];
+    var saved = (pref.types || {})[prefKey(sel.subject)];
     sel.types = (Array.isArray(saved) ? saved.filter(function (t) { return mine.indexOf(t) >= 0; }) : []);
     if (!sel.types.length) sel.types = mine.slice();
   }
   initTypes();
 
+  /* 시험을 바꾸면 그 시험의 과목, 주차, 유형 설정을 불러옵니다 */
+  function setExam(exam) {
+    buildExam(exam);
+    initSubject();
+    initTypes();
+  }
+
   function savePref() {
     var weeks = (pref.weeks && typeof pref.weeks === "object") ? pref.weeks : {};
-    weeks[sel.subject] = sel.weeks;
+    weeks[prefKey(sel.subject)] = sel.weeks;
     var types = (pref.types && typeof pref.types === "object") ? pref.types : {};
-    types[sel.subject] = sel.types;
-    pref = { subject: sel.subject, weeks: weeks, types: types, count: sel.count };
+    types[prefKey(sel.subject)] = sel.types;
+    var examSubject = (pref.examSubject && typeof pref.examSubject === "object") ? pref.examSubject : {};
+    var subject = pref.subject;
+    if (EXAM === "중간고사") subject = sel.subject; else examSubject[EXAM] = sel.subject;
+    pref = { subject: subject, examSubject: examSubject, weeks: weeks, types: types, count: sel.count };
     lsSet(LS_PREF, pref);
   }
 
@@ -186,10 +241,9 @@
   }
 
   /* ================= 메인과 시험 목록 ================= */
-  /* 지금 문항은 전부 3학년 2학기 중간고사입니다. 다른 시험이 생기면 여기에 더합니다 */
+  /* 지금 문항은 전부 3학년 2학기입니다. 시험은 EXAMS 순서대로 보여 줍니다 */
 
   var TERM = "3학년 2학기";
-  var EXAM = "중간고사";
 
   function menuButton(name, metaText, onClick) {
     var b = el("button", "subject");
@@ -200,13 +254,26 @@
     return b;
   }
 
+  function examMeta(exam) {
+    var subs = {}, n = 0;
+    ITEMS.forEach(function (q) { if (inExam(q, exam)) { subs[q.subject] = 1; n++; } });
+    return Object.keys(subs).length + "과목, " + n + "문항";
+  }
+
   function renderMenus() {
-    var meta = SUBJECTS.length + "과목, " + ALL.length + "문항";
+    var have = EXAMS.filter(function (ex) { return ITEMS.some(function (q) { return inExam(q, ex); }); });
     $("termList").textContent = "";
-    $("termList").appendChild(menuButton(TERM, EXAM + ", " + meta, function () { show("exam"); }));
+    $("termList").appendChild(menuButton(TERM, have.join(", "), function () { show("exam"); }));
     $("examTerm").textContent = TERM;
     $("examList").textContent = "";
-    $("examList").appendChild(menuButton(EXAM, meta, function () { renderHome(); show("home"); }));
+    have.forEach(function (ex) {
+      $("examList").appendChild(menuButton(ex, examMeta(ex), function () {
+        setExam(ex);
+        $("brandTag").textContent = TERM + " " + EXAM;
+        renderHome();
+        show("home");
+      }));
+    });
     $("brandTag").textContent = TERM + " " + EXAM;
   }
 
